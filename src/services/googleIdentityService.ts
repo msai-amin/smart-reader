@@ -69,7 +69,10 @@ class GoogleIdentityService {
         client_id: this.clientId,
         callback: this.handleCredentialResponse.bind(this),
         auto_select: false,
-        cancel_on_tap_outside: true
+        cancel_on_tap_outside: true,
+        // Add localhost support
+        ux_mode: 'popup',
+        context: 'signin'
       });
 
       this.isInitialized = true;

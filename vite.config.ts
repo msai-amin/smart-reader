@@ -84,6 +84,7 @@ export default defineConfig({
   },
   server: {
     port: 3001,
+    host: '127.0.0.1', // Use 127.0.0.1 instead of localhost for OAuth compatibility
     open: true,
     headers: {
       'Cross-Origin-Embedder-Policy': 'unsafe-none',
