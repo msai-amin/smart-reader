@@ -27,12 +27,17 @@ export function AuthModal({ isOpen, onClose, onAuthChange }: AuthModalProps) {
     setError(null);
 
     try {
+      console.log('Starting Google authentication...');
       await googleAuthService.initialize();
+      console.log('Google API initialized, attempting sign in...');
       const user = await googleAuthService.signIn();
+      console.log('Sign in successful:', user.email);
       setUser(user);
       onAuthChange(user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in');
+      console.error('Sign in error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

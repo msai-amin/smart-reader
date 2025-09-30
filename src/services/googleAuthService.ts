@@ -43,29 +43,57 @@ class GoogleAuthService {
     if (this.isInitialized) return;
 
     return new Promise((resolve, reject) => {
-      // Load Google API script
-      if (typeof window !== 'undefined' && !window.gapi) {
-        const script = document.createElement('script');
-        script.src = 'https://apis.google.com/js/api.js';
-        script.onload = () => {
-          window.gapi.load('client:auth2', () => {
-            this.gapi = window.gapi;
-            this.initializeGapi().then(resolve).catch(reject);
-          });
-        };
-        script.onerror = () => reject(new Error('Failed to load Google API script'));
-        document.head.appendChild(script);
-      } else if (window.gapi) {
+      // Check if gapi is already loaded
+      if (typeof window !== 'undefined' && window.gapi) {
         this.gapi = window.gapi;
         this.initializeGapi().then(resolve).catch(reject);
+        return;
+      }
+
+      // Load Google API script
+      if (typeof window !== 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://apis.google.com/js/api.js';
+        script.async = true;
+        script.defer = true;
+        
+        script.onload = () => {
+          console.log('Google API script loaded');
+          if (window.gapi) {
+            window.gapi.load('client:auth2', () => {
+              console.log('Google API client loaded');
+              this.gapi = window.gapi;
+              this.initializeGapi().then(resolve).catch(reject);
+            });
+          } else {
+            reject(new Error('Google API not available after script load'));
+          }
+        };
+        
+        script.onerror = () => {
+          console.error('Failed to load Google API script');
+          reject(new Error('Failed to load Google API script'));
+        };
+        
+        document.head.appendChild(script);
       } else {
-        reject(new Error('Google API not available'));
+        reject(new Error('Window object not available'));
       }
     });
   }
 
   private async initializeGapi(): Promise<void> {
     try {
+      // Validate credentials
+      if (!this.clientId) {
+        throw new Error('Google Client ID is not configured. Please check your .env file.');
+      }
+      if (!this.apiKey) {
+        throw new Error('Google API Key is not configured. Please check your .env file.');
+      }
+
+      console.log('Initializing Google API with Client ID:', this.clientId.substring(0, 20) + '...');
+      
       await this.gapi.client.init({
         apiKey: this.apiKey,
         clientId: this.clientId,
@@ -74,16 +102,22 @@ class GoogleAuthService {
       });
 
       this.isInitialized = true;
+      console.log('Google API initialized successfully');
       
       // Check if user is already signed in
       const authInstance = this.gapi.auth2.getAuthInstance();
-      if (authInstance.isSignedIn.get()) {
+      if (authInstance && authInstance.isSignedIn.get()) {
         const user = authInstance.currentUser.get();
         this.currentUser = this.mapGoogleUser(user);
+        console.log('User already signed in:', this.currentUser.email);
       }
     } catch (error) {
       console.error('Error initializing Google API:', error);
-      throw new Error('Failed to initialize Google API');
+      if (error instanceof Error) {
+        throw new Error(`Failed to initialize Google API: ${error.message}`);
+      } else {
+        throw new Error('Failed to initialize Google API: Unknown error');
+      }
     }
   }
 
