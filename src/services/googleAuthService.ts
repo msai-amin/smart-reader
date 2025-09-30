@@ -184,11 +184,23 @@ class GoogleAuthService {
       }
     } catch (error) {
       console.error('Error initializing Google API:', error);
+      
+      // Try to get more specific error information
+      let errorMessage = 'Unknown error';
       if (error instanceof Error) {
-        throw new Error(`Failed to initialize Google API: ${error.message}`);
-      } else {
-        throw new Error('Failed to initialize Google API: Unknown error');
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object') {
+        // Handle Google API specific errors
+        if ('error' in error) {
+          errorMessage = `Google API Error: ${JSON.stringify(error.error)}`;
+        } else if ('details' in error) {
+          errorMessage = `Google API Error: ${JSON.stringify(error.details)}`;
+        } else {
+          errorMessage = `Google API Error: ${JSON.stringify(error)}`;
+        }
       }
+      
+      throw new Error(`Failed to initialize Google API: ${errorMessage}`);
     }
   }
 
