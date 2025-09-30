@@ -192,7 +192,17 @@ class GoogleAuthService {
       } else if (error && typeof error === 'object') {
         // Handle Google API specific errors
         if ('error' in error) {
-          errorMessage = `Google API Error: ${JSON.stringify(error.error)}`;
+          const errorStr = JSON.stringify(error.error);
+          errorMessage = `Google API Error: ${errorStr}`;
+          
+          // Handle specific known errors
+          if (errorStr.includes('idpiframe_initialization_failed')) {
+            errorMessage = 'Google OAuth iframe failed to initialize. This is usually due to Content Security Policy restrictions or browser security settings. Please try refreshing the page or using a different browser.';
+          } else if (errorStr.includes('popup_blocked_by_browser')) {
+            errorMessage = 'Google OAuth popup was blocked by your browser. Please allow popups for this site and try again.';
+          } else if (errorStr.includes('access_denied')) {
+            errorMessage = 'Access denied. You may have cancelled the Google sign-in process.';
+          }
         } else if ('details' in error) {
           errorMessage = `Google API Error: ${JSON.stringify(error.details)}`;
         } else {
