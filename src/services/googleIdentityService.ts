@@ -64,15 +64,17 @@ class GoogleIdentityService {
         throw new Error('Google Client ID is not configured');
       }
 
-      // Initialize Google Identity Services
+      // Initialize Google Identity Services with modern configuration
       window.google.accounts.id.initialize({
         client_id: this.clientId,
         callback: this.handleCredentialResponse.bind(this),
         auto_select: false,
         cancel_on_tap_outside: true,
-        // Add localhost support
+        // Modern configuration for better compatibility
         ux_mode: 'popup',
-        context: 'signin'
+        context: 'signin',
+        // Add FedCM support
+        use_fedcm_for_prompt: true
       });
 
       this.isInitialized = true;
@@ -163,17 +165,71 @@ class GoogleIdentityService {
 
       window.addEventListener('googleSignIn', handleSignIn as EventListener);
 
-      // Trigger the sign-in popup
+      // Try the modern prompt method first
       try {
         window.google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          console.log('Google prompt notification:', notification);
+          
+          // Handle different notification types
+          if (notification.isNotDisplayed()) {
+            console.log('Prompt not displayed, trying alternative method...');
+            // Try alternative sign-in method
+            this.tryAlternativeSignIn().then(resolve).catch(reject);
+          } else if (notification.isSkippedMoment()) {
+            console.log('Prompt skipped');
             window.removeEventListener('googleSignIn', handleSignIn as EventListener);
-            reject(new Error('Sign in was cancelled or not displayed'));
+            reject(new Error('Sign in was skipped or cancelled by user.'));
+          } else if (notification.isDismissedMoment()) {
+            console.log('Prompt dismissed');
+            window.removeEventListener('googleSignIn', handleSignIn as EventListener);
+            reject(new Error('Sign in was dismissed by user.'));
           }
+          // If none of the above, the prompt is displayed and we wait for user action
         });
       } catch (error) {
-        window.removeEventListener('googleSignIn', handleSignIn as EventListener);
-        reject(new Error(`Failed to trigger sign in: ${error}`));
+        console.error('Error triggering Google sign-in:', error);
+        // Try alternative method
+        this.tryAlternativeSignIn().then(resolve).catch(reject);
+      }
+    });
+  }
+
+  private async tryAlternativeSignIn(): Promise<GoogleUser> {
+    // Alternative method using renderButton approach
+    return new Promise((resolve, reject) => {
+      // Create a temporary button element for Google sign-in
+      const buttonDiv = document.createElement('div');
+      buttonDiv.style.display = 'none';
+      document.body.appendChild(buttonDiv);
+
+      try {
+        window.google.accounts.id.renderButton(buttonDiv, {
+          theme: 'outline',
+          size: 'large',
+          type: 'standard',
+          shape: 'rectangular',
+          text: 'signin_with',
+          callback: (response: any) => {
+            this.handleCredentialResponse(response);
+            if (this.currentUser) {
+              resolve(this.currentUser);
+            } else {
+              reject(new Error('Sign in failed'));
+            }
+            document.body.removeChild(buttonDiv);
+          }
+        });
+
+        // Programmatically click the button
+        const button = buttonDiv.querySelector('div[role="button"]') as HTMLElement;
+        if (button) {
+          button.click();
+        } else {
+          throw new Error('Could not create sign-in button');
+        }
+      } catch (error) {
+        document.body.removeChild(buttonDiv);
+        reject(new Error(`Alternative sign-in failed: ${error}`));
       }
     });
   }
