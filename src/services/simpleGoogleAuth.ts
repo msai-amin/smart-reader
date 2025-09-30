@@ -72,6 +72,14 @@ class SimpleGoogleAuth {
     try {
       console.log('Received credential response:', response);
       
+      // Clean up any hidden buttons
+      const hiddenButtons = document.querySelectorAll('div[style*="position: fixed"][style*="top: -1000px"]');
+      hiddenButtons.forEach(button => {
+        if (document.body.contains(button)) {
+          document.body.removeChild(button);
+        }
+      });
+      
       // Decode the JWT token to get user information
       const payload = this.decodeJWT(response.credential);
       
@@ -125,53 +133,60 @@ class SimpleGoogleAuth {
       try {
         console.log('Attempting Google sign-in...');
         
-        // Initialize with callback
-        window.google.accounts.id.initialize({
-          client_id: this.clientId,
+      // Initialize with callback and disable FedCM
+      window.google.accounts.id.initialize({
+        client_id: this.clientId,
+        callback: this.handleCredentialResponse,
+        use_fedcm_for_prompt: false, // Disable FedCM to avoid CORS issues
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+
+      // Skip the prompt and go directly to renderButton approach
+      console.log('Using renderButton approach to avoid CORS issues...');
+      
+      // Create a button and click it
+      const buttonDiv = document.createElement('div');
+      buttonDiv.style.position = 'fixed';
+      buttonDiv.style.top = '-1000px';
+      buttonDiv.style.left = '-1000px';
+      buttonDiv.style.visibility = 'hidden';
+      document.body.appendChild(buttonDiv);
+
+      try {
+        window.google.accounts.id.renderButton(buttonDiv, {
+          theme: 'outline',
+          size: 'large',
+          type: 'standard',
+          shape: 'rectangular',
+          text: 'signin_with',
           callback: this.handleCredentialResponse
         });
 
-        // Try to show the prompt
-        window.google.accounts.id.prompt((notification: any) => {
-          console.log('Prompt notification:', notification);
-          
-          if (notification.isNotDisplayed()) {
-            console.log('Prompt not displayed, trying renderButton approach...');
+        // Click the button programmatically after a short delay
+        setTimeout(() => {
+          const button = buttonDiv.querySelector('div[role="button"]') as HTMLElement;
+          if (button) {
+            console.log('Clicking Google sign-in button...');
+            button.click();
             
-            // Fallback: create a button and click it
-            const buttonDiv = document.createElement('div');
-            buttonDiv.style.position = 'fixed';
-            buttonDiv.style.top = '-1000px';
-            buttonDiv.style.left = '-1000px';
-            document.body.appendChild(buttonDiv);
-
-            window.google.accounts.id.renderButton(buttonDiv, {
-              theme: 'outline',
-              size: 'large',
-              type: 'standard',
-              shape: 'rectangular',
-              text: 'signin_with',
-              callback: this.handleCredentialResponse
-            });
-
-            // Click the button programmatically
+            // Clean up the button after 10 seconds if no response
             setTimeout(() => {
-              const button = buttonDiv.querySelector('div[role="button"]') as HTMLElement;
-              if (button) {
-                button.click();
-              } else {
+              if (document.body.contains(buttonDiv)) {
                 document.body.removeChild(buttonDiv);
-                reject(new Error('Could not create sign-in button'));
               }
-            }, 100);
-          } else if (notification.isSkippedMoment()) {
-            window.removeEventListener('googleSignIn', handleSignIn as EventListener);
-            reject(new Error('Sign in was skipped by user'));
-          } else if (notification.isDismissedMoment()) {
-            window.removeEventListener('googleSignIn', handleSignIn as EventListener);
-            reject(new Error('Sign in was dismissed by user'));
+            }, 10000);
+          } else {
+            console.error('Could not find Google sign-in button');
+            document.body.removeChild(buttonDiv);
+            reject(new Error('Could not create sign-in button'));
           }
-        });
+        }, 500);
+      } catch (error) {
+        console.error('Error creating Google sign-in button:', error);
+        document.body.removeChild(buttonDiv);
+        reject(new Error(`Failed to create sign-in button: ${error}`));
+      }
       } catch (error) {
         console.error('Error during sign-in:', error);
         window.removeEventListener('googleSignIn', handleSignIn as EventListener);
