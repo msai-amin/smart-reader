@@ -57,6 +57,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
   const [selectedColor, setSelectedColor] = useState<string>('#FFFF00')
   const [showHighlightMenu, setShowHighlightMenu] = useState<boolean>(false)
   const [showTTSSettings, setShowTTSSettings] = useState<boolean>(false)
+  const [currentReadingText, setCurrentReadingText] = useState<string>('')
+  const [spokenTextLength, setSpokenTextLength] = useState<number>(0)
   const pageContainerRef = useRef<HTMLDivElement>(null)
 
   const highlightColors = [
@@ -75,6 +77,22 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return
+      
+      // ESC key closes TTS settings or highlight menu
+      if (e.key === 'Escape') {
+        if (showTTSSettings) {
+          setShowTTSSettings(false)
+          return
+        }
+        if (showHighlightMenu) {
+          setShowHighlightMenu(false)
+          return
+        }
+        if (isFullscreen) {
+          setIsFullscreen(false)
+          return
+        }
+      }
       
       switch(e.key) {
         case 'ArrowLeft':
@@ -107,7 +125,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [pageNumber, numPages, scale, rotation, showHighlightMenu, scrollMode])
+  }, [pageNumber, numPages, scale, rotation, showHighlightMenu, showTTSSettings, scrollMode, isFullscreen])
 
   // Handle text selection for highlighting
   useEffect(() => {
@@ -276,7 +294,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
     }
   }
 
-  // TTS Functions
+  // TTS Functions with word tracking
   const handleTTSPlay = () => {
     if (!tts.isEnabled || !document.pageTexts) return
 
@@ -292,15 +310,26 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
       ttsService.resume()
       updateTTS({ isPlaying: true })
     } else {
+      setCurrentReadingText(cleanedText)
+      setSpokenTextLength(0)
+      
       ttsService.speak(
         cleanedText,
         () => {
           // On end, move to next page if available
           updateTTS({ isPlaying: false })
+          setCurrentReadingText('')
+          setSpokenTextLength(0)
           if (pageNumber < numPages) {
             goToNextPage()
             // Auto-continue reading next page
             setTimeout(() => handleTTSPlay(), 500)
+          }
+        },
+        (word: string, charIndex: number) => {
+          // Update spoken text length for visual feedback
+          if (tts.highlightCurrentWord) {
+            setSpokenTextLength(charIndex + word.length)
           }
         }
       )
@@ -311,6 +340,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
   const handleTTSStop = () => {
     ttsService.stop()
     updateTTS({ isPlaying: false })
+    setCurrentReadingText('')
+    setSpokenTextLength(0)
   }
 
   const readCurrentPage = () => {
@@ -319,9 +350,22 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
     if (!currentPageText) return
 
     const cleanedText = ttsService.cleanText(currentPageText)
-    ttsService.speak(cleanedText, () => {
-      updateTTS({ isPlaying: false })
-    })
+    setCurrentReadingText(cleanedText)
+    setSpokenTextLength(0)
+    
+    ttsService.speak(
+      cleanedText, 
+      () => {
+        updateTTS({ isPlaying: false })
+        setCurrentReadingText('')
+        setSpokenTextLength(0)
+      },
+      (word: string, charIndex: number) => {
+        if (tts.highlightCurrentWord) {
+          setSpokenTextLength(charIndex + word.length)
+        }
+      }
+    )
     updateTTS({ isPlaying: true })
   }
 
@@ -332,6 +376,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
     const readNextPage = () => {
       if (currentPage > numPages) {
         updateTTS({ isPlaying: false })
+        setCurrentReadingText('')
+        setSpokenTextLength(0)
         return
       }
 
@@ -343,16 +389,29 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
       }
 
       const cleanedText = ttsService.cleanText(pageText)
-      ttsService.speak(cleanedText, () => {
-        currentPage++
-        if (currentPage <= numPages) {
-          setPageNumber(currentPage)
-          updatePDFViewer({ currentPage })
-          setTimeout(readNextPage, 500)
-        } else {
-          updateTTS({ isPlaying: false })
+      setCurrentReadingText(cleanedText)
+      setSpokenTextLength(0)
+      
+      ttsService.speak(
+        cleanedText, 
+        () => {
+          currentPage++
+          if (currentPage <= numPages) {
+            setPageNumber(currentPage)
+            updatePDFViewer({ currentPage })
+            setTimeout(readNextPage, 500)
+          } else {
+            updateTTS({ isPlaying: false })
+            setCurrentReadingText('')
+            setSpokenTextLength(0)
+          }
+        },
+        (word: string, charIndex: number) => {
+          if (tts.highlightCurrentWord) {
+            setSpokenTextLength(charIndex + word.length)
+          }
         }
-      })
+      )
     }
 
     updateTTS({ isPlaying: true })
@@ -591,44 +650,99 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
               <Download className="w-4 h-4" />
             </button>
 
-            {/* TTS Controls */}
-            {tts.isEnabled && (
-              <div className="flex items-center gap-1 border-l border-gray-300 pl-2">
-                <button
-                  onClick={handleTTSPlay}
-                  className={`btn-ghost p-1.5 ${tts.isPlaying ? 'bg-green-100 text-green-600' : ''}`}
-                  title={tts.isPlaying ? 'Pause Reading' : 'Play/Resume Reading'}
-                >
-                  {tts.isPlaying && !ttsService.isPausedState() ? (
-                    <Pause className="w-4 h-4" />
-                  ) : (
-                    <Play className="w-4 h-4" />
-                  )}
-                </button>
-                <button
-                  onClick={handleTTSStop}
-                  className="btn-ghost p-1.5"
-                  title="Stop Reading"
-                  disabled={!tts.isPlaying}
-                >
-                  <Square className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setShowTTSSettings(!showTTSSettings)}
-                  className={`btn-ghost p-1.5 ${showTTSSettings ? 'bg-blue-100 text-blue-600' : ''}`}
-                  title="TTS Settings"
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+            {/* TTS Controls - Always visible */}
+            <div className="flex items-center gap-1 border-l border-gray-300 pl-2">
+              {/* TTS Enable/Settings Toggle */}
+              <button
+                onClick={() => {
+                  if (!tts.isEnabled) {
+                    updateTTS({ isEnabled: true })
+                    setShowTTSSettings(true)
+                  } else {
+                    setShowTTSSettings(!showTTSSettings)
+                  }
+                }}
+                className={`btn-ghost p-1.5 ${tts.isEnabled ? 'bg-blue-100 text-blue-600' : ''}`}
+                title={tts.isEnabled ? 'TTS Settings' : 'Enable Text-to-Speech'}
+              >
+                <Volume2 className="w-4 h-4" />
+              </button>
+
+              {/* Playback Controls - Only when enabled */}
+              {tts.isEnabled && (
+                <>
+                  <button
+                    onClick={handleTTSPlay}
+                    className={`btn-ghost p-1.5 ${tts.isPlaying ? 'bg-green-100 text-green-600' : ''}`}
+                    title={tts.isPlaying ? 'Pause Reading' : 'Play/Resume Reading'}
+                  >
+                    {tts.isPlaying && !ttsService.isPausedState() ? (
+                      <Pause className="w-4 h-4" />
+                    ) : (
+                      <Play className="w-4 h-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={handleTTSStop}
+                    className="btn-ghost p-1.5"
+                    title="Stop Reading"
+                    disabled={!tts.isPlaying}
+                  >
+                    <Square className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         {/* TTS Settings Panel */}
-        {showTTSSettings && (
+        {showTTSSettings && tts.isEnabled && (
           <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                🎙️ Text-to-Speech Settings
+              </h3>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowTTSSettings(false)}
+                  className="text-xs text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 font-medium"
+                >
+                  ✕ Close
+                </button>
+                <button
+                  onClick={() => {
+                    updateTTS({ isEnabled: false })
+                    setShowTTSSettings(false)
+                    handleTTSStop()
+                  }}
+                  className="text-xs text-red-600 hover:text-red-700 dark:text-red-400"
+                >
+                  Disable TTS
+                </button>
+              </div>
+            </div>
             <TTSControls />
+            
+            {/* Reading Progress Indicator */}
+            {tts.isPlaying && currentReadingText && (
+              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Reading...</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                  <div 
+                    className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                    style={{ width: `${(spokenTextLength / currentReadingText.length) * 100}%` }}
+                  ></div>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {Math.round((spokenTextLength / currentReadingText.length) * 100)}% complete
+                </div>
+              </div>
+            )}
+            
             <div className="mt-3 flex gap-2">
               <button
                 onClick={readCurrentPage}
@@ -656,11 +770,26 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
                 <h3 className="text-lg font-semibold mb-4">
                   {scrollMode === 'single' ? `Page ${pageNumber} Text Content:` : 'Full Document Text:'}
                 </h3>
-                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                  {scrollMode === 'single' 
-                    ? (document.pageTexts?.[pageNumber - 1] || 'No text content available for this page.')
-                    : document.content
-                  }
+                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed relative">
+                  {scrollMode === 'single' ? (
+                    currentReadingText && tts.isPlaying && tts.highlightCurrentWord ? (
+                      <>
+                        <span className="transition-colors duration-100">
+                          {currentReadingText.substring(0, spokenTextLength)}
+                        </span>
+                        <span className="bg-yellow-300 transition-colors duration-100 px-1 rounded">
+                          {currentReadingText.substring(spokenTextLength, spokenTextLength + 50).split(' ')[0]}
+                        </span>
+                        <span className="text-gray-400">
+                          {currentReadingText.substring(spokenTextLength + currentReadingText.substring(spokenTextLength, spokenTextLength + 50).split(' ')[0].length)}
+                        </span>
+                      </>
+                    ) : (
+                      document.pageTexts?.[pageNumber - 1] || 'No text content available for this page.'
+                    )
+                  ) : (
+                    document.content
+                  )}
                 </div>
               </div>
             </div>
@@ -769,6 +898,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
           <div>F : Fullscreen</div>
           <div>H : Toggle highlight mode</div>
           <div>S : Toggle scroll mode</div>
+          <div>ESC : Close panels/Exit fullscreen</div>
         </div>
       )}
 

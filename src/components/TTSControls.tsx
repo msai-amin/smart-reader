@@ -3,24 +3,32 @@ import { useAppStore } from '../store/appStore';
 import { ttsService } from '../services/ttsService';
 import { 
   Volume2, VolumeX, Play, Pause, Square, Settings, 
-  ChevronDown, FastForward, Rewind 
+  ChevronDown, FastForward, Rewind, User, Users
 } from 'lucide-react';
 
 export function TTSControls() {
   const { tts, updateTTS } = useAppStore();
   const [showSettings, setShowSettings] = useState(false);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [femaleVoices, setFemaleVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [maleVoices, setMaleVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
 
   useEffect(() => {
     if (ttsService.isSupported()) {
-      const availableVoices = ttsService.getEnglishVoices();
-      setVoices(availableVoices);
+      const naturalVoices = ttsService.getNaturalVoices();
+      setFemaleVoices(naturalVoices.female);
+      setMaleVoices(naturalVoices.male);
       
       const currentSettings = ttsService.getSettings();
       if (currentSettings.voice) {
         setSelectedVoice(currentSettings.voice);
         updateTTS({ voiceName: currentSettings.voice.name });
+      } else if (naturalVoices.female.length > 0) {
+        // Auto-select first female voice as default
+        const defaultVoice = naturalVoices.female[0];
+        setSelectedVoice(defaultVoice);
+        ttsService.setVoice(defaultVoice);
+        updateTTS({ voiceName: defaultVoice.name });
       }
     }
   }, []);
@@ -36,12 +44,44 @@ export function TTSControls() {
   }, [tts.rate, tts.pitch, tts.volume, selectedVoice]);
 
   const handleVoiceChange = (voiceName: string) => {
-    const voice = voices.find(v => v.name === voiceName);
+    const allVoices = [...femaleVoices, ...maleVoices];
+    const voice = allVoices.find(v => v.name === voiceName);
     if (voice) {
       setSelectedVoice(voice);
       ttsService.setVoice(voice);
       updateTTS({ voiceName: voice.name });
     }
+  };
+
+  const getVoiceLabel = (voice: SpeechSynthesisVoice): string => {
+    // Simplify voice name for display
+    let name = voice.name;
+    
+    // Remove common prefixes
+    name = name.replace(/^(Google|Microsoft|Apple|Amazon)\s+/i, '');
+    name = name.replace(/\s+(US|UK|GB|En)$/i, '');
+    
+    return name;
+  };
+
+  const previewVoice = (voice: SpeechSynthesisVoice, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Stop any current speech
+    ttsService.stop();
+    
+    // Temporarily use this voice for preview
+    const currentVoice = selectedVoice;
+    ttsService.setVoice(voice);
+    
+    // Speak a preview message
+    const previewText = "Hello! This is how I sound when reading your documents.";
+    ttsService.speak(previewText, () => {
+      // Restore original voice after preview
+      if (currentVoice) {
+        ttsService.setVoice(currentVoice);
+      }
+    });
   };
 
   const handleRateChange = (value: number) => {
@@ -141,22 +181,100 @@ export function TTSControls() {
       {/* Settings Panel */}
       {showSettings && (
         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-4">
-          {/* Voice Selection */}
+          {/* Voice Selection - Curated Natural Voices */}
           <div>
-            <label className="block text-sm font-medium mb-2">Voice</label>
-            <div className="relative">
-              <select
-                value={selectedVoice?.name || ''}
-                onChange={(e) => handleVoiceChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none pr-8"
-              >
-                {voices.map((voice) => (
-                  <option key={voice.name} value={voice.name}>
-                    {voice.name} ({voice.lang})
-                  </option>
+            <label className="block text-sm font-medium mb-3">Choose a Natural Voice</label>
+            
+            {/* Female Voices */}
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-pink-600 dark:text-pink-400">
+                <User className="w-3 h-3" />
+                <span>Female Voices</span>
+              </div>
+              <div className="grid gap-2">
+                {femaleVoices.map((voice, index) => (
+                  <div
+                    key={voice.name}
+                    className={`rounded-lg border-2 transition-all ${
+                      selectedVoice?.name === voice.name
+                        ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-pink-300 dark:hover:border-pink-700 bg-white dark:bg-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <button
+                        onClick={() => handleVoiceChange(voice.name)}
+                        className="flex-1 px-4 py-2.5 text-left"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className={`font-medium ${selectedVoice?.name === voice.name ? 'text-pink-700 dark:text-pink-300' : ''}`}>
+                              {getVoiceLabel(voice)}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{voice.lang}</div>
+                          </div>
+                          {selectedVoice?.name === voice.name && (
+                            <div className="w-2 h-2 rounded-full bg-pink-500"></div>
+                          )}
+                        </div>
+                      </button>
+                      <button
+                        onClick={(e) => previewVoice(voice, e)}
+                        className="px-3 py-2 hover:bg-pink-100 dark:hover:bg-pink-900/30 rounded-r-lg transition-colors"
+                        title="Preview voice"
+                      >
+                        <Play className="w-3 h-3 text-pink-600 dark:text-pink-400" />
+                      </button>
+                    </div>
+                  </div>
                 ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Male Voices */}
+            <div>
+              <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                <Users className="w-3 h-3" />
+                <span>Male Voices</span>
+              </div>
+              <div className="grid gap-2">
+                {maleVoices.map((voice, index) => (
+                  <div
+                    key={voice.name}
+                    className={`rounded-lg border-2 transition-all ${
+                      selectedVoice?.name === voice.name
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700 bg-white dark:bg-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <button
+                        onClick={() => handleVoiceChange(voice.name)}
+                        className="flex-1 px-4 py-2.5 text-left"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className={`font-medium ${selectedVoice?.name === voice.name ? 'text-blue-700 dark:text-blue-300' : ''}`}>
+                              {getVoiceLabel(voice)}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{voice.lang}</div>
+                          </div>
+                          {selectedVoice?.name === voice.name && (
+                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                          )}
+                        </div>
+                      </button>
+                      <button
+                        onClick={(e) => previewVoice(voice, e)}
+                        className="px-3 py-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-r-lg transition-colors"
+                        title="Preview voice"
+                      >
+                        <Play className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

@@ -68,6 +68,113 @@ class TextToSpeechService {
     return this.voices.filter(v => v.lang.startsWith('en'));
   }
 
+  // Get curated natural voices - 3 female and 3 male
+  getNaturalVoices(): { female: SpeechSynthesisVoice[]; male: SpeechSynthesisVoice[] } {
+    const englishVoices = this.getEnglishVoices();
+    
+    // Keywords that indicate natural/premium voices
+    const naturalKeywords = [
+      'premium', 'enhanced', 'natural', 'neural', 'google', 
+      'samantha', 'karen', 'moira', 'tessa', 'fiona', 'alice',
+      'daniel', 'oliver', 'tom', 'alex', 'fred', 'james',
+      'microsoft', 'siri', 'google us', 'google uk'
+    ];
+
+    // Keywords for female voices
+    const femaleKeywords = [
+      'female', 'woman', 'samantha', 'karen', 'moira', 'tessa', 
+      'fiona', 'alice', 'victoria', 'zira', 'susan', 'linda',
+      'heather', 'serena', 'aria', 'emma', 'ava', 'ella'
+    ];
+
+    // Keywords for male voices
+    const maleKeywords = [
+      'male', 'man', 'daniel', 'oliver', 'tom', 'alex', 'fred',
+      'james', 'david', 'mark', 'george', 'rishi', 'thomas'
+    ];
+
+    // Score voices based on quality indicators
+    const scoreVoice = (voice: SpeechSynthesisVoice): number => {
+      let score = 0;
+      const lowerName = voice.name.toLowerCase();
+      
+      // Premium/Natural voice bonus
+      naturalKeywords.forEach(keyword => {
+        if (lowerName.includes(keyword.toLowerCase())) {
+          score += 10;
+        }
+      });
+
+      // Local voice bonus (usually higher quality)
+      if (voice.localService) {
+        score += 5;
+      }
+
+      // US/UK English bonus
+      if (voice.lang === 'en-US' || voice.lang === 'en-GB') {
+        score += 3;
+      }
+
+      return score;
+    };
+
+    // Classify and score voices
+    const classifiedVoices = englishVoices.map(voice => {
+      const lowerName = voice.name.toLowerCase();
+      let gender: 'male' | 'female' | 'unknown' = 'unknown';
+
+      // Determine gender
+      if (femaleKeywords.some(keyword => lowerName.includes(keyword))) {
+        gender = 'female';
+      } else if (maleKeywords.some(keyword => lowerName.includes(keyword))) {
+        gender = 'male';
+      }
+
+      return {
+        voice,
+        gender,
+        score: scoreVoice(voice)
+      };
+    });
+
+    // Sort by score (highest first)
+    const sortedByScore = classifiedVoices.sort((a, b) => b.score - a.score);
+
+    // Get top 3 female and 3 male voices
+    const femaleVoices = sortedByScore
+      .filter(v => v.gender === 'female')
+      .slice(0, 3)
+      .map(v => v.voice);
+
+    const maleVoices = sortedByScore
+      .filter(v => v.gender === 'male')
+      .slice(0, 3)
+      .map(v => v.voice);
+
+    // If we don't have enough, add some from unknown category
+    if (femaleVoices.length < 3) {
+      const unknownVoices = sortedByScore
+        .filter(v => v.gender === 'unknown')
+        .map(v => v.voice);
+      
+      while (femaleVoices.length < 3 && unknownVoices.length > 0) {
+        femaleVoices.push(unknownVoices.shift()!);
+      }
+    }
+
+    if (maleVoices.length < 3) {
+      const unknownVoices = sortedByScore
+        .filter(v => v.gender === 'unknown')
+        .map(v => v.voice);
+      
+      while (maleVoices.length < 3 && unknownVoices.length > 0) {
+        maleVoices.push(unknownVoices.shift()!);
+      }
+    }
+
+    return { female: femaleVoices, male: maleVoices };
+  }
+
   getSettings(): TTSSettings {
     return { ...this.settings };
   }
