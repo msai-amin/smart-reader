@@ -5,6 +5,9 @@ An intelligent document reading assistant with AI chat capabilities, built with 
 ## Features
 
 - **Advanced PDF Viewer**: Professional PDF viewing with zoom, rotation, page navigation, and text extraction
+- **Text-to-Speech (TTS)**: Natural human voice reading with customizable speed, pitch, and voice selection
+- **Text Highlighting**: Highlight important text in PDFs with multiple color options
+- **Scroll Modes**: Single page or continuous scroll viewing
 - **Large Text Viewer**: Customizable typography with multiple font families, sizes, and themes
 - **AI Chat Overlay**: Real-time AI interactions with document context
 - **Document Upload**: Support for text files and PDFs with automatic content extraction
@@ -92,6 +95,19 @@ npm run dev
    - Theme (Light, Dark, Sepia)
    - PDF view mode (Text, PDF, Split)
    - PDF zoom and navigation options
+
+### Text-to-Speech (TTS)
+
+1. Open a PDF document
+2. Click the speaker icon (🔊) in the toolbar to enable TTS
+3. Click the Settings icon (⚙️) to customize voice, speed, pitch, and volume
+4. Use the Play button (▶️) to start reading
+5. Options:
+   - **Read Current Page**: Read only the current page
+   - **Read from Here to End**: Continue from current page to the end
+   - **Speed Presets**: 0.75x, 1x, 1.25x, 1.5x for quick speed adjustment
+
+See [TTS_GUIDE.md](TTS_GUIDE.md) for detailed instructions and tips.
 
 ### AI Chat
 

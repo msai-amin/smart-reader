@@ -38,6 +38,16 @@ export interface PDFViewerSettings {
   showProgress: boolean
 }
 
+export interface TTSSettings {
+  isEnabled: boolean
+  isPlaying: boolean
+  rate: number
+  pitch: number
+  volume: number
+  voiceName: string | null
+  highlightCurrentWord: boolean
+}
+
 interface AppState {
   // Document state
   currentDocument: Document | null
@@ -53,6 +63,9 @@ interface AppState {
   // PDF viewer settings
   pdfViewer: PDFViewerSettings
   
+  // TTS settings
+  tts: TTSSettings
+  
   // Chat state
   chatMessages: ChatMessage[]
   isTyping: boolean
@@ -65,6 +78,7 @@ interface AppState {
   setLoading: (loading: boolean) => void
   updateTypography: (settings: Partial<TypographySettings>) => void
   updatePDFViewer: (settings: Partial<PDFViewerSettings>) => void
+  updateTTS: (settings: Partial<TTSSettings>) => void
   addChatMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void
   clearChat: () => void
   setTyping: (typing: boolean) => void
@@ -93,6 +107,15 @@ export const useAppStore = create<AppState>((set) => ({
     showPageNumbers: true,
     showProgress: true
   },
+  tts: {
+    isEnabled: false,
+    isPlaying: false,
+    rate: 1.0,
+    pitch: 1.0,
+    volume: 1.0,
+    voiceName: null,
+    highlightCurrentWord: true
+  },
   chatMessages: [],
   isTyping: false,
   
@@ -119,6 +142,10 @@ export const useAppStore = create<AppState>((set) => ({
   
   updatePDFViewer: (settings) => set((state) => ({
     pdfViewer: { ...state.pdfViewer, ...settings }
+  })),
+  
+  updateTTS: (settings) => set((state) => ({
+    tts: { ...state.tts, ...settings }
   })),
   
   addChatMessage: (message) => set((state) => ({

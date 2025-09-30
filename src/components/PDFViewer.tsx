@@ -16,9 +16,14 @@ import {
   Highlighter,
   Trash2,
   Rows,
-  Square
+  Square,
+  Play,
+  Pause,
+  Volume2
 } from 'lucide-react'
 import { useAppStore, Document as DocumentType } from '../store/appStore'
+import { ttsService } from '../services/ttsService'
+import { TTSControls } from './TTSControls'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 
@@ -38,7 +43,7 @@ interface PDFViewerProps {
 }
 
 const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
-  const { pdfViewer, updatePDFViewer } = useAppStore()
+  const { pdfViewer, updatePDFViewer, tts, updateTTS } = useAppStore()
   const [numPages, setNumPages] = useState<number>(document.totalPages || 0)
   const [pageNumber, setPageNumber] = useState<number>(pdfViewer.currentPage)
   const [scale, setScale] = useState<number>(pdfViewer.scale)
@@ -51,6 +56,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
   const [highlights, setHighlights] = useState<Highlight[]>([])
   const [selectedColor, setSelectedColor] = useState<string>('#FFFF00')
   const [showHighlightMenu, setShowHighlightMenu] = useState<boolean>(false)
+  const [showTTSSettings, setShowTTSSettings] = useState<boolean>(false)
   const pageContainerRef = useRef<HTMLDivElement>(null)
 
   const highlightColors = [
@@ -269,6 +275,98 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
       }
     }
   }
+
+  // TTS Functions
+  const handleTTSPlay = () => {
+    if (!tts.isEnabled || !document.pageTexts) return
+
+    const currentPageText = document.pageTexts[pageNumber - 1]
+    if (!currentPageText) return
+
+    const cleanedText = ttsService.cleanText(currentPageText)
+    
+    if (tts.isPlaying && !ttsService.isPausedState()) {
+      ttsService.pause()
+      updateTTS({ isPlaying: false })
+    } else if (ttsService.isPausedState()) {
+      ttsService.resume()
+      updateTTS({ isPlaying: true })
+    } else {
+      ttsService.speak(
+        cleanedText,
+        () => {
+          // On end, move to next page if available
+          updateTTS({ isPlaying: false })
+          if (pageNumber < numPages) {
+            goToNextPage()
+            // Auto-continue reading next page
+            setTimeout(() => handleTTSPlay(), 500)
+          }
+        }
+      )
+      updateTTS({ isPlaying: true })
+    }
+  }
+
+  const handleTTSStop = () => {
+    ttsService.stop()
+    updateTTS({ isPlaying: false })
+  }
+
+  const readCurrentPage = () => {
+    if (!document.pageTexts) return
+    const currentPageText = document.pageTexts[pageNumber - 1]
+    if (!currentPageText) return
+
+    const cleanedText = ttsService.cleanText(currentPageText)
+    ttsService.speak(cleanedText, () => {
+      updateTTS({ isPlaying: false })
+    })
+    updateTTS({ isPlaying: true })
+  }
+
+  const readFromCurrentPage = () => {
+    if (!document.pageTexts) return
+    
+    let currentPage = pageNumber
+    const readNextPage = () => {
+      if (currentPage > numPages) {
+        updateTTS({ isPlaying: false })
+        return
+      }
+
+      const pageText = document.pageTexts![currentPage - 1]
+      if (!pageText) {
+        currentPage++
+        readNextPage()
+        return
+      }
+
+      const cleanedText = ttsService.cleanText(pageText)
+      ttsService.speak(cleanedText, () => {
+        currentPage++
+        if (currentPage <= numPages) {
+          setPageNumber(currentPage)
+          updatePDFViewer({ currentPage })
+          setTimeout(readNextPage, 500)
+        } else {
+          updateTTS({ isPlaying: false })
+        }
+      })
+    }
+
+    updateTTS({ isPlaying: true })
+    readNextPage()
+  }
+
+  // Stop TTS when page changes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (tts.isPlaying) {
+        ttsService.stop()
+      }
+    }
+  }, [pageNumber])
 
   const currentPageHighlights = highlights.filter(h => h.pageNumber === pageNumber)
 
@@ -492,8 +590,61 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
             >
               <Download className="w-4 h-4" />
             </button>
+
+            {/* TTS Controls */}
+            {tts.isEnabled && (
+              <div className="flex items-center gap-1 border-l border-gray-300 pl-2">
+                <button
+                  onClick={handleTTSPlay}
+                  className={`btn-ghost p-1.5 ${tts.isPlaying ? 'bg-green-100 text-green-600' : ''}`}
+                  title={tts.isPlaying ? 'Pause Reading' : 'Play/Resume Reading'}
+                >
+                  {tts.isPlaying && !ttsService.isPausedState() ? (
+                    <Pause className="w-4 h-4" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
+                </button>
+                <button
+                  onClick={handleTTSStop}
+                  className="btn-ghost p-1.5"
+                  title="Stop Reading"
+                  disabled={!tts.isPlaying}
+                >
+                  <Square className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowTTSSettings(!showTTSSettings)}
+                  className={`btn-ghost p-1.5 ${showTTSSettings ? 'bg-blue-100 text-blue-600' : ''}`}
+                  title="TTS Settings"
+                >
+                  <Volume2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* TTS Settings Panel */}
+        {showTTSSettings && (
+          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200">
+            <TTSControls />
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={readCurrentPage}
+                className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Read Current Page
+              </button>
+              <button
+                onClick={readFromCurrentPage}
+                className="px-3 py-1 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600"
+              >
+                Read from Here to End
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* PDF Content */}
