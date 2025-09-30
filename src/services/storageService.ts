@@ -1,7 +1,10 @@
 /**
  * Storage Service
- * Manages local storage for books, notes, and audio files
+ * Manages local storage and Google Drive sync for books, notes, and audio files
  */
+
+import { googleAuthService } from './googleAuthService';
+import { googleDriveService } from './googleDriveService';
 
 export interface SavedBook {
   id: string;
@@ -13,6 +16,8 @@ export interface SavedBook {
   totalPages?: number;
   fileData?: ArrayBuffer | string;
   notes?: Note[];
+  googleDriveId?: string; // Google Drive file ID for sync
+  syncedAt?: Date; // Last sync timestamp
 }
 
 export interface Note {
@@ -34,6 +39,8 @@ export interface SavedAudio {
   pageRange: { start: number; end: number };
   voiceName: string;
   createdAt: Date;
+  googleDriveId?: string; // Google Drive file ID for sync
+  syncedAt?: Date; // Last sync timestamp
 }
 
 class StorageService {
@@ -293,6 +300,152 @@ class StorageService {
       console.error('Error importing data:', error);
       throw new Error('Invalid import data format.');
     }
+  }
+
+  // Google Drive sync methods
+  async syncToGoogleDrive(): Promise<void> {
+    if (!googleAuthService.isSignedIn()) {
+      throw new Error('User must be signed in to sync with Google Drive');
+    }
+
+    try {
+      await googleDriveService.initialize();
+      
+      // Sync books
+      const books = this.getAllBooks();
+      for (const book of books) {
+        if (!book.googleDriveId) {
+          try {
+            const driveFile = await googleDriveService.saveBook(book);
+            book.googleDriveId = driveFile.id;
+            book.syncedAt = new Date();
+            await this.saveBook(book);
+          } catch (error) {
+            console.error(`Failed to sync book ${book.title}:`, error);
+          }
+        }
+      }
+
+      // Sync notes
+      const notes = this.getAllNotes();
+      if (notes.length > 0) {
+        try {
+          const driveFile = await googleDriveService.saveNotes(notes);
+          // Store the notes file ID in localStorage for reference
+          localStorage.setItem('smart_reader_notes_drive_id', driveFile.id);
+        } catch (error) {
+          console.error('Failed to sync notes:', error);
+        }
+      }
+
+      // Sync audio files
+      const audio = await this.getAllAudio();
+      for (const audioFile of audio) {
+        if (!audioFile.googleDriveId) {
+          try {
+            const driveFile = await googleDriveService.saveAudio(audioFile.audioBlob, {
+              title: audioFile.title,
+              bookId: audioFile.bookId,
+              pageRange: audioFile.pageRange,
+              voiceName: audioFile.voiceName,
+            });
+            audioFile.googleDriveId = driveFile.id;
+            audioFile.syncedAt = new Date();
+            await this.saveAudio(audioFile);
+          } catch (error) {
+            console.error(`Failed to sync audio ${audioFile.title}:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing to Google Drive:', error);
+      throw new Error('Failed to sync with Google Drive');
+    }
+  }
+
+  async syncFromGoogleDrive(): Promise<void> {
+    if (!googleAuthService.isSignedIn()) {
+      throw new Error('User must be signed in to sync from Google Drive');
+    }
+
+    try {
+      await googleDriveService.initialize();
+      
+      // Get all files from Google Drive
+      const driveFiles = await googleDriveService.listAppFiles();
+      
+      for (const file of driveFiles) {
+        try {
+          if (file.name.endsWith('.json') && file.name !== 'notes.json') {
+            // This is a book file
+            const bookData = await googleDriveService.loadBook(file.id);
+            
+            // Check if book already exists locally
+            const existingBook = this.getBook(bookData.id);
+            if (!existingBook) {
+              // Add new book
+              bookData.googleDriveId = file.id;
+              bookData.syncedAt = new Date();
+              await this.saveBook(bookData);
+            }
+          } else if (file.name === 'notes.json') {
+            // This is the notes file
+            const notesData = await googleDriveService.loadNotes(file.id);
+            
+            // Merge with existing notes (avoid duplicates)
+            const existingNotes = this.getAllNotes();
+            const existingIds = new Set(existingNotes.map(n => n.id));
+            const newNotes = notesData.filter(n => !existingIds.has(n.id));
+            
+            for (const note of newNotes) {
+              this.saveNote(note);
+            }
+          } else if (file.mimeType.startsWith('audio/')) {
+            // This is an audio file
+            const audioBlob = await googleDriveService.loadAudio(file.id);
+            
+            // Create audio object (we need to reconstruct metadata)
+            const audioData: SavedAudio = {
+              id: crypto.randomUUID(),
+              bookId: 'unknown', // We'll need to store this in metadata
+              title: file.name.replace('.wav', ''),
+              audioBlob,
+              duration: 0,
+              pageRange: { start: 1, end: 1 },
+              voiceName: 'Unknown',
+              createdAt: file.createdTime,
+              googleDriveId: file.id,
+              syncedAt: new Date(),
+            };
+            
+            await this.saveAudio(audioData);
+          }
+        } catch (error) {
+          console.error(`Failed to sync file ${file.name}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing from Google Drive:', error);
+      throw new Error('Failed to sync from Google Drive');
+    }
+  }
+
+  async isGoogleDriveEnabled(): Promise<boolean> {
+    return googleAuthService.isSignedIn();
+  }
+
+  async getSyncStatus(): Promise<{ lastSync: Date | null; isEnabled: boolean }> {
+    const isEnabled = await this.isGoogleDriveEnabled();
+    const lastSync = localStorage.getItem('smart_reader_last_sync');
+    
+    return {
+      isEnabled,
+      lastSync: lastSync ? new Date(lastSync) : null,
+    };
+  }
+
+  async setLastSyncTime(): Promise<void> {
+    localStorage.setItem('smart_reader_last_sync', new Date().toISOString());
   }
 }
 

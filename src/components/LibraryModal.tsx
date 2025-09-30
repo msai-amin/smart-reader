@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, Book, FileText, Music, Trash2, Download, Upload, HardDrive } from 'lucide-react';
+import { X, Book, FileText, Music, Trash2, Download, Upload, HardDrive, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { storageService, SavedBook, Note, SavedAudio } from '../services/storageService';
 import { useAppStore } from '../store/appStore';
+import { googleAuthService } from '../services/googleAuthService';
 
 interface LibraryModalProps {
   isOpen: boolean;
@@ -14,6 +15,9 @@ export function LibraryModal({ isOpen, onClose }: LibraryModalProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [audio, setAudio] = useState<SavedAudio[]>([]);
   const [storageInfo, setStorageInfo] = useState({ used: 0, max: 0, percentage: 0 });
+  const [isGoogleDriveEnabled, setIsGoogleDriveEnabled] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<{ lastSync: Date | null; isEnabled: boolean }>({ lastSync: null, isEnabled: false });
   const { setCurrentDocument, addDocument } = useAppStore();
 
   useEffect(() => {
@@ -27,6 +31,13 @@ export function LibraryModal({ isOpen, onClose }: LibraryModalProps) {
     setNotes(storageService.getAllNotes());
     setAudio(await storageService.getAllAudio());
     setStorageInfo(storageService.getStorageInfo());
+    
+    // Check Google Drive status
+    const isEnabled = await storageService.isGoogleDriveEnabled();
+    setIsGoogleDriveEnabled(isEnabled);
+    
+    const status = await storageService.getSyncStatus();
+    setSyncStatus(status);
   };
 
   const handleOpenBook = (book: SavedBook) => {
@@ -106,6 +117,46 @@ export function LibraryModal({ isOpen, onClose }: LibraryModalProps) {
     a.download = `${audio.title}.wav`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleSyncToGoogleDrive = async () => {
+    if (!isGoogleDriveEnabled) {
+      alert('Please sign in to Google first');
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      await storageService.syncToGoogleDrive();
+      await storageService.setLastSyncTime();
+      await loadData(); // Refresh data
+      alert('Successfully synced to Google Drive!');
+    } catch (error) {
+      console.error('Sync error:', error);
+      alert(`Failed to sync: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSyncFromGoogleDrive = async () => {
+    if (!isGoogleDriveEnabled) {
+      alert('Please sign in to Google first');
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      await storageService.syncFromGoogleDrive();
+      await storageService.setLastSyncTime();
+      await loadData(); // Refresh data
+      alert('Successfully synced from Google Drive!');
+    } catch (error) {
+      console.error('Sync error:', error);
+      alert(`Failed to sync: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -290,6 +341,7 @@ export function LibraryModal({ isOpen, onClose }: LibraryModalProps) {
 
           {/* Footer */}
           <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            {/* Storage Info */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-sm">
                 <HardDrive className="w-4 h-4 text-gray-500" />
@@ -305,6 +357,55 @@ export function LibraryModal({ isOpen, onClose }: LibraryModalProps) {
                 style={{ width: `${Math.min(storageInfo.percentage, 100)}%` }}
               ></div>
             </div>
+
+            {/* Google Drive Sync */}
+            {isGoogleDriveEnabled && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-sm text-green-700">
+                    <Cloud className="w-4 h-4" />
+                    <span className="font-medium">Google Drive Sync Enabled</span>
+                  </div>
+                  {syncStatus.lastSync && (
+                    <span className="text-xs text-green-600">
+                      Last sync: {syncStatus.lastSync.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSyncToGoogleDrive}
+                    disabled={isSyncing}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs text-green-700 bg-green-100 border border-green-300 rounded hover:bg-green-200 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                    Upload to Drive
+                  </button>
+                  <button
+                    onClick={handleSyncFromGoogleDrive}
+                    disabled={isSyncing}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs text-blue-700 bg-blue-100 border border-blue-300 rounded hover:bg-blue-200 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                    Download from Drive
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!isGoogleDriveEnabled && (
+              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                  <CloudOff className="w-4 h-4" />
+                  <span>Google Drive sync not enabled</span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Sign in to Google to sync your books, notes, and audio files across devices
+                </p>
+              </div>
+            )}
+
+            {/* Export/Import */}
             <div className="flex gap-2">
               <button
                 onClick={handleExportData}

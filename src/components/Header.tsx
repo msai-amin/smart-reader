@@ -1,15 +1,29 @@
 import React from 'react'
-import { Upload, MessageCircle, Settings, FileText, Library } from 'lucide-react'
+import { Upload, MessageCircle, Settings, FileText, Library, User, Cloud } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
 import { DocumentUpload } from './DocumentUpload'
 import { TypographySettings } from './TypographySettings'
 import { LibraryModal } from './LibraryModal'
+import { AuthModal } from './AuthModal'
+import { googleAuthService, GoogleUser } from '../services/googleAuthService'
 
 export const Header: React.FC = () => {
   const { toggleChat, currentDocument } = useAppStore()
   const [showUpload, setShowUpload] = React.useState(false)
   const [showSettings, setShowSettings] = React.useState(false)
   const [showLibrary, setShowLibrary] = React.useState(false)
+  const [showAuth, setShowAuth] = React.useState(false)
+  const [user, setUser] = React.useState<GoogleUser | null>(null)
+
+  React.useEffect(() => {
+    // Check if user is already signed in
+    const currentUser = googleAuthService.getCurrentUser()
+    setUser(currentUser)
+  }, [])
+
+  const handleAuthChange = (newUser: GoogleUser | null) => {
+    setUser(newUser)
+  }
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -56,6 +70,24 @@ export const Header: React.FC = () => {
               <Settings className="w-4 h-4" />
               <span>Settings</span>
             </button>
+
+            {/* Auth Button */}
+            <button
+              onClick={() => setShowAuth(true)}
+              className={`btn-ghost flex items-center space-x-2 ${user ? 'text-green-600' : ''}`}
+            >
+              {user ? (
+                <>
+                  <Cloud className="w-4 h-4" />
+                  <span>Sync</span>
+                </>
+              ) : (
+                <>
+                  <User className="w-4 h-4" />
+                  <span>Sign In</span>
+                </>
+              )}
+            </button>
             
             <button
               onClick={toggleChat}
@@ -69,6 +101,14 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Modals */}
+      {showAuth && (
+        <AuthModal 
+          isOpen={showAuth} 
+          onClose={() => setShowAuth(false)} 
+          onAuthChange={handleAuthChange}
+        />
+      )}
+
       {showLibrary && (
         <LibraryModal isOpen={showLibrary} onClose={() => setShowLibrary(false)} />
       )}

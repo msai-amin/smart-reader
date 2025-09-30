@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.17.1",
     "clsx": "^2.0.0",
+    "googleapis": "^160.0.0",
     "lucide-react": "^0.294.0",
     "openai": "^4.20.1",
     "pdfjs-dist": "^5.3.93",
