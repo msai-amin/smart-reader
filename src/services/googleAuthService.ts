@@ -221,7 +221,12 @@ class GoogleAuthService {
 
     try {
       const authInstance = this.gapi.auth2.getAuthInstance();
-      const user = await authInstance.signIn();
+      
+      // Try popup-based sign-in first (more reliable for OAuth)
+      const user = await authInstance.signIn({
+        ux_mode: 'popup'
+      });
+      
       this.currentUser = this.mapGoogleUser(user);
       
       // Store user info in localStorage
@@ -230,7 +235,22 @@ class GoogleAuthService {
       return this.currentUser;
     } catch (error) {
       console.error('Error signing in:', error);
-      throw new Error('Failed to sign in with Google');
+      
+      // If popup fails, try redirect-based sign-in
+      try {
+        console.log('Popup failed, trying redirect-based sign-in...');
+        const authInstance = this.gapi.auth2.getAuthInstance();
+        const user = await authInstance.signIn({
+          ux_mode: 'redirect'
+        });
+        
+        this.currentUser = this.mapGoogleUser(user);
+        localStorage.setItem('google_user', JSON.stringify(this.currentUser));
+        return this.currentUser;
+      } catch (redirectError) {
+        console.error('Redirect sign in also failed:', redirectError);
+        throw new Error('Failed to sign in with Google');
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, LogIn, LogOut, User, Cloud, HardDrive } from 'lucide-react';
-import { googleAuthService, GoogleUser } from '../services/googleAuthService';
+import { googleIdentityService, GoogleUser } from '../services/googleIdentityService';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -16,7 +16,7 @@ export function AuthModal({ isOpen, onClose, onAuthChange }: AuthModalProps) {
   useEffect(() => {
     if (isOpen) {
       // Check if user is already signed in
-      const currentUser = googleAuthService.getCurrentUser();
+      const currentUser = googleIdentityService.getCurrentUser();
       setUser(currentUser);
       onAuthChange(currentUser);
     }
@@ -28,9 +28,9 @@ export function AuthModal({ isOpen, onClose, onAuthChange }: AuthModalProps) {
 
     try {
       console.log('Starting Google authentication...');
-      await googleAuthService.initialize();
-      console.log('Google API initialized, attempting sign in...');
-      const user = await googleAuthService.signIn();
+      await googleIdentityService.initialize();
+      console.log('Google Identity Services initialized, attempting sign in...');
+      const user = await googleIdentityService.signIn();
       console.log('Sign in successful:', user.email);
       setUser(user);
       onAuthChange(user);
@@ -48,7 +48,7 @@ export function AuthModal({ isOpen, onClose, onAuthChange }: AuthModalProps) {
     setError(null);
 
     try {
-      await googleAuthService.signOut();
+      await googleIdentityService.signOut();
       setUser(null);
       onAuthChange(null);
     } catch (err) {
