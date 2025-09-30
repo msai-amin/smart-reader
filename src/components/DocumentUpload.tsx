@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react'
-import { X, Upload, FileText, AlertCircle } from 'lucide-react'
+import { X, Upload, FileText, AlertCircle, Save } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
+import { storageService } from '../services/storageService'
 
 interface DocumentUploadProps {
   onClose: () => void
@@ -10,6 +11,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onClose }) => {
   const { addDocument, setLoading } = useAppStore()
   const [dragActive, setDragActive] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [saveToLibrary, setSaveToLibrary] = useState(true)
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -55,6 +57,23 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onClose }) => {
           pageTexts
         }
         addDocument(document)
+        
+        // Save to library if checkbox is checked
+        if (saveToLibrary) {
+          try {
+            await storageService.saveBook({
+              id: document.id,
+              title: document.name,
+              fileName: file.name,
+              type: 'pdf',
+              savedAt: new Date(),
+              totalPages,
+              fileData: pdfData,
+            })
+          } catch (err) {
+            console.error('Error saving to library:', err)
+          }
+        }
       } else {
         const content = await extractTextFromFile(file)
         const document = {
@@ -65,6 +84,22 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onClose }) => {
           uploadedAt: new Date()
         }
         addDocument(document)
+        
+        // Save to library if checkbox is checked
+        if (saveToLibrary) {
+          try {
+            await storageService.saveBook({
+              id: document.id,
+              title: document.name,
+              fileName: file.name,
+              type: 'text',
+              savedAt: new Date(),
+              fileData: content,
+            })
+          } catch (err) {
+            console.error('Error saving to library:', err)
+          }
+        }
       }
       onClose()
     } catch (err) {
@@ -205,6 +240,21 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onClose }) => {
               Note: For PDFs, text extraction is attempted first. If the advanced PDF viewer has issues, 
               the app will automatically fall back to text-only view.
             </p>
+          </div>
+
+          {/* Save to Library Checkbox */}
+          <div className="mt-4 flex items-center">
+            <input
+              type="checkbox"
+              id="save-to-library"
+              checked={saveToLibrary}
+              onChange={(e) => setSaveToLibrary(e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="save-to-library" className="ml-2 text-sm text-gray-700 flex items-center gap-1">
+              <Save className="w-4 h-4" />
+              Save to Library for offline access
+            </label>
           </div>
         </div>
       </div>

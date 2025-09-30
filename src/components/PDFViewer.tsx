@@ -24,6 +24,7 @@ import {
 import { useAppStore, Document as DocumentType } from '../store/appStore'
 import { ttsService } from '../services/ttsService'
 import { TTSControls } from './TTSControls'
+import { storageService } from '../services/storageService'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 
@@ -43,7 +44,7 @@ interface PDFViewerProps {
 }
 
 const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
-  const { pdfViewer, updatePDFViewer, tts, updateTTS } = useAppStore()
+  const { pdfViewer, updatePDFViewer, tts, updateTTS, toggleChat, addChatMessage } = useAppStore()
   const [numPages, setNumPages] = useState<number>(document.totalPages || 0)
   const [pageNumber, setPageNumber] = useState<number>(pdfViewer.currentPage)
   const [scale, setScale] = useState<number>(pdfViewer.scale)
@@ -59,6 +60,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
   const [showTTSSettings, setShowTTSSettings] = useState<boolean>(false)
   const [currentReadingText, setCurrentReadingText] = useState<string>('')
   const [spokenTextLength, setSpokenTextLength] = useState<number>(0)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; text: string } | null>(null)
   const pageContainerRef = useRef<HTMLDivElement>(null)
 
   const highlightColors = [
@@ -127,11 +129,14 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [pageNumber, numPages, scale, rotation, showHighlightMenu, showTTSSettings, scrollMode, isFullscreen])
 
-  // Handle text selection for highlighting
+  // Handle text selection for highlighting and context menu
   useEffect(() => {
-    const handleSelection = () => {
+    const handleSelection = (e: MouseEvent) => {
       const selection = window.getSelection()
-      if (selection && selection.toString().trim() && showHighlightMenu) {
+      const selectedText = selection?.toString().trim()
+      
+      if (selectedText && showHighlightMenu) {
+        // Highlight mode
         const range = selection.getRangeAt(0)
         const rect = range.getBoundingClientRect()
         
@@ -147,7 +152,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
           const newHighlight: Highlight = {
             id: Date.now().toString(),
             pageNumber,
-            text: selection.toString(),
+            text: selectedText,
             color: selectedColor,
             position: relativeRect
           }
@@ -157,8 +162,35 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
       }
     }
 
+    const handleContextMenu = (e: MouseEvent) => {
+      const selection = window.getSelection()
+      const selectedText = selection?.toString().trim()
+      
+      if (selectedText && selectedText.length > 0) {
+        e.preventDefault()
+        setContextMenu({
+          x: e.clientX,
+          y: e.clientY,
+          text: selectedText
+        })
+      } else {
+        setContextMenu(null)
+      }
+    }
+
+    const handleClick = () => {
+      setContextMenu(null)
+    }
+
     window.document.addEventListener('mouseup', handleSelection)
-    return () => window.document.removeEventListener('mouseup', handleSelection)
+    window.document.addEventListener('contextmenu', handleContextMenu)
+    window.document.addEventListener('click', handleClick)
+    
+    return () => {
+      window.document.removeEventListener('mouseup', handleSelection)
+      window.document.removeEventListener('contextmenu', handleContextMenu)
+      window.document.removeEventListener('click', handleClick)
+    }
   }, [showHighlightMenu, selectedColor, pageNumber, highlights])
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
@@ -294,6 +326,23 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
     }
   }
 
+  const sendToAIChat = (text: string) => {
+    // Add the selected text as a user message to the chat
+    addChatMessage({
+      role: 'user',
+      content: `Please explain this text from the document:\n\n"${text}"`
+    })
+    // Open the chat
+    toggleChat()
+    // Close context menu
+    setContextMenu(null)
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setContextMenu(null)
+  }
+
   // TTS Functions with word tracking
   const handleTTSPlay = () => {
     if (!tts.isEnabled || !document.pageTexts) return
@@ -416,6 +465,44 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
 
     updateTTS({ isPlaying: true })
     readNextPage()
+  }
+
+  const saveAudioRecording = async (startPage: number, endPage: number) => {
+    if (!document.pageTexts) return
+
+    try {
+      // Compile text from page range
+      const texts = document.pageTexts.slice(startPage - 1, endPage)
+      const fullText = texts.join('\n\n')
+      const cleanedText = ttsService.cleanText(fullText)
+
+      // Start recording and speaking
+      await ttsService.speakAndRecord(cleanedText, async () => {
+        // When done, get the audio blob and save it
+        try {
+          const audioBlob = await ttsService.getRecordedAudio()
+          
+          await storageService.saveAudio({
+            id: crypto.randomUUID(),
+            bookId: document.id,
+            title: `${document.name} (Pages ${startPage}-${endPage})`,
+            audioBlob,
+            duration: 0, // TODO: Calculate actual duration
+            pageRange: { start: startPage, end: endPage },
+            voiceName: tts.voiceName || 'Default',
+            createdAt: new Date(),
+          })
+
+          alert('Audio saved successfully!')
+        } catch (err) {
+          console.error('Error saving audio:', err)
+          alert('Failed to save audio')
+        }
+      })
+    } catch (error) {
+      console.error('Error recording audio:', error)
+      alert('Failed to record audio')
+    }
   }
 
   // Stop TTS when page changes or component unmounts
@@ -908,6 +995,40 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
           <div className="flex items-center gap-2">
             <Highlighter className="w-4 h-4" />
             <span>Highlight Mode Active - Select text to highlight</span>
+          </div>
+        </div>
+      )}
+
+      {/* Context Menu for Selected Text */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 min-w-[200px]"
+          style={{
+            left: `${contextMenu.x}px`,
+            top: `${contextMenu.y}px`,
+          }}
+        >
+          <button
+            onClick={() => sendToAIChat(contextMenu.text)}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2 text-blue-600 dark:text-blue-400"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            Ask AI about this
+          </button>
+          <button
+            onClick={() => copyToClipboard(contextMenu.text)}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-700 dark:text-gray-300"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Copy text
+          </button>
+          <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+          <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 max-w-[300px] truncate">
+            "{contextMenu.text}"
           </div>
         </div>
       )}

@@ -1,13 +1,15 @@
 import React from 'react'
-import { Upload, MessageCircle, Settings, FileText } from 'lucide-react'
+import { Upload, MessageCircle, Settings, FileText, Library } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
 import { DocumentUpload } from './DocumentUpload'
 import { TypographySettings } from './TypographySettings'
+import { LibraryModal } from './LibraryModal'
 
 export const Header: React.FC = () => {
   const { toggleChat, currentDocument } = useAppStore()
   const [showUpload, setShowUpload] = React.useState(false)
   const [showSettings, setShowSettings] = React.useState(false)
+  const [showLibrary, setShowLibrary] = React.useState(false)
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -31,6 +33,14 @@ export const Header: React.FC = () => {
 
           {/* Actions */}
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowLibrary(true)}
+              className="btn-ghost flex items-center space-x-2"
+            >
+              <Library className="w-4 h-4" />
+              <span>Library</span>
+            </button>
+
             <button
               onClick={() => setShowUpload(true)}
               className="btn-secondary flex items-center space-x-2"
@@ -59,6 +69,10 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Modals */}
+      {showLibrary && (
+        <LibraryModal isOpen={showLibrary} onClose={() => setShowLibrary(false)} />
+      )}
+
       {showUpload && (
         <DocumentUpload onClose={() => setShowUpload(false)} />
       )}

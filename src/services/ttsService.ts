@@ -31,6 +31,12 @@ class TextToSpeechService {
   private currentText = '';
   private onEndCallback: (() => void) | null = null;
   private onWordCallback: ((word: string, charIndex: number) => void) | null = null;
+  
+  // Recording support
+  private isRecording = false;
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioChunks: Blob[] = [];
+  private recordingStream: MediaStream | null = null;
 
   constructor() {
     this.synth = window.speechSynthesis;
@@ -291,6 +297,81 @@ class TextToSpeechService {
   splitIntoSentences(text: string): string[] {
     const cleaned = this.cleanText(text);
     return cleaned.match(/[^.!?]+[.!?]+/g) || [cleaned];
+  }
+
+  // Recording methods
+  async startRecording(): Promise<void> {
+    try {
+      // Create a destination for capturing audio (using Web Audio API)
+      const audioContext = new AudioContext();
+      const destination = audioContext.createMediaStreamDestination();
+      
+      // Connect to the destination for recording
+      this.recordingStream = destination.stream;
+      
+      this.audioChunks = [];
+      this.mediaRecorder = new MediaRecorder(this.recordingStream);
+      
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+      
+      this.mediaRecorder.start();
+      this.isRecording = true;
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      throw new Error('Failed to start recording. Please check microphone permissions.');
+    }
+  }
+
+  stopRecording(): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      if (!this.mediaRecorder || !this.isRecording) {
+        reject(new Error('No recording in progress'));
+        return;
+      }
+
+      this.mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+        this.audioChunks = [];
+        this.isRecording = false;
+        
+        // Clean up
+        if (this.recordingStream) {
+          this.recordingStream.getTracks().forEach(track => track.stop());
+          this.recordingStream = null;
+        }
+        
+        resolve(audioBlob);
+      };
+
+      this.mediaRecorder.stop();
+    });
+  }
+
+  isCurrentlyRecording(): boolean {
+    return this.isRecording;
+  }
+
+  // Speak and record simultaneously
+  async speakAndRecord(
+    text: string,
+    onEnd?: () => void,
+    onWord?: (word: string, charIndex: number) => void
+  ): Promise<void> {
+    await this.startRecording();
+    this.speak(text, () => {
+      if (onEnd) onEnd();
+    }, onWord);
+  }
+
+  async getRecordedAudio(): Promise<Blob> {
+    if (this.isRecording) {
+      return await this.stopRecording();
+    }
+    throw new Error('No recording to retrieve');
   }
 }
 
