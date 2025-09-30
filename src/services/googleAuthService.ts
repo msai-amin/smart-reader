@@ -46,7 +46,16 @@ class GoogleAuthService {
       // Check if gapi is already loaded
       if (typeof window !== 'undefined' && window.gapi) {
         this.gapi = window.gapi;
-        this.initializeGapi().then(resolve).catch(reject);
+        
+        // If client is already available, initialize directly
+        if (window.gapi.client) {
+          this.initializeGapi().then(resolve).catch(reject);
+        } else {
+          // Wait for client to load
+          window.gapi.load('client:auth2', () => {
+            this.initializeGapi().then(resolve).catch(reject);
+          });
+        }
         return;
       }
 
@@ -63,7 +72,25 @@ class GoogleAuthService {
             window.gapi.load('client:auth2', () => {
               console.log('Google API client loaded');
               this.gapi = window.gapi;
-              this.initializeGapi().then(resolve).catch(reject);
+              
+              // Wait for client to be available with timeout
+              let attempts = 0;
+              const maxAttempts = 50; // 5 seconds max wait
+              
+              const waitForClient = () => {
+                attempts++;
+                if (this.gapi && this.gapi.client) {
+                  console.log('Google API client is ready');
+                  this.initializeGapi().then(resolve).catch(reject);
+                } else if (attempts >= maxAttempts) {
+                  reject(new Error('Google API client failed to load after 5 seconds'));
+                } else {
+                  console.log(`Waiting for Google API client... (${attempts}/${maxAttempts})`);
+                  setTimeout(waitForClient, 100);
+                }
+              };
+              
+              waitForClient();
             });
           } else {
             reject(new Error('Google API not available after script load'));
@@ -84,6 +111,17 @@ class GoogleAuthService {
 
   private async initializeGapi(): Promise<void> {
     try {
+      // Validate gapi and client
+      if (!this.gapi) {
+        throw new Error('Google API not loaded');
+      }
+      if (!this.gapi.client) {
+        throw new Error('Google API client not available');
+      }
+      if (typeof this.gapi.client.init !== 'function') {
+        throw new Error('Google API client.init is not a function');
+      }
+
       // Validate credentials
       if (!this.clientId) {
         throw new Error('Google Client ID is not configured. Please check your .env file.');

@@ -21,6 +21,10 @@ export const testGoogleApiConfig = () => {
   if (typeof window !== 'undefined' && window.gapi) {
     console.log('gapi.client available:', !!window.gapi.client);
     console.log('gapi.auth2 available:', !!window.gapi.auth2);
+    
+    if (window.gapi.client) {
+      console.log('gapi.client.init available:', typeof window.gapi.client.init === 'function');
+    }
   }
   
   // Check for common issues
