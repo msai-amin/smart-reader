@@ -49,12 +49,45 @@ class GoogleAuthService {
         
         // If client is already available, initialize directly
         if (window.gapi.client) {
+          console.log('Google API client already available');
           this.initializeGapi().then(resolve).catch(reject);
         } else {
-          // Wait for client to load
-          window.gapi.load('client:auth2', () => {
-            this.initializeGapi().then(resolve).catch(reject);
-          });
+          // Load client libraries first
+          console.log('Loading Google API client libraries...');
+          
+          // Use a more robust loading approach
+          const loadClient = () => {
+            if (window.gapi && window.gapi.load) {
+              window.gapi.load('client:auth2', () => {
+                console.log('Client libraries loaded, waiting for client to be ready...');
+                
+                // Wait for client to be available
+                let attempts = 0;
+                const maxAttempts = 50;
+                
+                const waitForClient = () => {
+                  attempts++;
+                  if (this.gapi && this.gapi.client) {
+                    console.log('Google API client is ready');
+                    this.initializeGapi().then(resolve).catch(reject);
+                  } else if (attempts >= maxAttempts) {
+                    reject(new Error('Google API client failed to load after 5 seconds'));
+                  } else {
+                    console.log(`Waiting for Google API client... (${attempts}/${maxAttempts})`);
+                    setTimeout(waitForClient, 100);
+                  }
+                };
+                
+                waitForClient();
+              });
+            } else {
+              // If gapi.load is not available, wait a bit and try again
+              console.log('gapi.load not available, retrying...');
+              setTimeout(loadClient, 100);
+            }
+          };
+          
+          loadClient();
         }
         return;
       }
