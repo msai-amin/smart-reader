@@ -5,7 +5,7 @@ import { DocumentUpload } from './DocumentUpload'
 import { TypographySettings } from './TypographySettings'
 import { LibraryModal } from './LibraryModal'
 import { AuthModal } from './AuthModal'
-import { googleIdentityService, GoogleUser } from '../services/googleIdentityService'
+import { simpleGoogleAuth, GoogleUser } from '../services/simpleGoogleAuth'
 
 export const Header: React.FC = () => {
   const { toggleChat, currentDocument } = useAppStore()
@@ -17,7 +17,7 @@ export const Header: React.FC = () => {
 
   React.useEffect(() => {
     // Check if user is already signed in
-    const currentUser = googleIdentityService.getCurrentUser()
+    const currentUser = simpleGoogleAuth.getCurrentUser()
     setUser(currentUser)
   }, [])
 

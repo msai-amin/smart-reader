@@ -1439,3 +1439,12 @@
 {"level":"info","message":"::1 - - [30/Sep/2025:12:58:01 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 12:58:01"}
 {"level":"info","message":"::1 - - [30/Sep/2025:12:58:31 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 12:58:31"}
 {"level":"info","message":"::1 - - [30/Sep/2025:12:59:01 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 12:59:01"}
+{"level":"info","message":"::1 - - [30/Sep/2025:12:59:31 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 12:59:31"}
+{"level":"info","message":"::1 - - [30/Sep/2025:13:00:01 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 13:00:01"}
+{"level":"info","message":"::1 - - [30/Sep/2025:13:00:31 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 13:00:31"}
+{"level":"info","message":"::1 - - [30/Sep/2025:13:01:01 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 13:01:01"}
+{"level":"info","message":"::1 - - [30/Sep/2025:13:01:31 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 13:01:31"}
+{"level":"info","message":"::1 - - [30/Sep/2025:13:02:01 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 13:02:01"}
+{"level":"info","message":"::1 - - [30/Sep/2025:13:02:32 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 13:02:32"}
+{"activeConnections":0,"averageResponseTime":1,"errorRate":2,"level":"info","message":"Current metrics:","service":"api-gateway","timestamp":"2025-09-30 13:02:51","totalRequests":1222}
+{"level":"info","message":"::1 - - [30/Sep/2025:13:03:02 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-09-30 13:03:02"}
