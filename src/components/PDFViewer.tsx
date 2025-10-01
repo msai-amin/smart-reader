@@ -549,7 +549,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
   return (
     <div className={`pdf-viewer w-full ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
       {/* PDF Controls */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="flex items-center justify-between p-3">
           <div className="flex items-center gap-3">
             {/* Page Navigation (only show in single page mode) */}

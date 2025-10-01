@@ -3328,3 +3328,23 @@
 {"level":"info","message":"::1 - - [01/Oct/2025:03:18:19 +0000] \"GET /health HTTP/1.1\" 200 125 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:18:19"}
 {"level":"info","message":"::1 - - [01/Oct/2025:03:18:49 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:18:49"}
 {"level":"info","message":"::1 - - [01/Oct/2025:03:19:19 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:19:19"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:19:49 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:19:49"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:20:19 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:20:19"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:20:49 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:20:49"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:21:19 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:21:19"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:21:49 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:21:49"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:22:20 +0000] \"GET /health HTTP/1.1\" 200 125 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:22:20"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:22:50 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:22:50"}
+{"activeConnections":0,"averageResponseTime":0,"errorRate":1,"level":"info","message":"Current metrics:","service":"api-gateway","timestamp":"2025-10-01 03:22:52","totalRequests":2939}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:23:20 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:23:20"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:23:50 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:23:50"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:24:20 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:24:20"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:24:50 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:24:50"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:25:20 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:25:20"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:25:50 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:25:50"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:26:20 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:26:20"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:26:50 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:26:50"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:27:20 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:27:20"}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:27:51 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:27:51"}
+{"activeConnections":0,"averageResponseTime":0,"errorRate":1,"level":"info","message":"Current metrics:","service":"api-gateway","timestamp":"2025-10-01 03:27:52","totalRequests":2949}
+{"level":"info","message":"::1 - - [01/Oct/2025:03:28:21 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 03:28:21"}
