@@ -34,6 +34,11 @@ export function AuthModal({ isOpen, onClose, onAuthChange }: AuthModalProps) {
       console.log('Sign in successful:', user.email);
       setUser(user);
       onAuthChange(user);
+      
+      // Automatically close the modal after successful sign-in
+      setTimeout(() => {
+        onClose();
+      }, 1000); // Close after 1 second to show success state
     } catch (err) {
       console.error('Sign in error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in';
@@ -51,6 +56,11 @@ export function AuthModal({ isOpen, onClose, onAuthChange }: AuthModalProps) {
       await simpleGoogleAuth.signOut();
       setUser(null);
       onAuthChange(null);
+      
+      // Automatically close the modal after successful sign-out
+      setTimeout(() => {
+        onClose();
+      }, 1000); // Close after 1 second to show sign-out confirmation
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign out');
     } finally {
