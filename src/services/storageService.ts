@@ -23,11 +23,15 @@ export interface SavedBook {
 export interface Note {
   id: string;
   bookId: string;
+  bookName: string;
   content: string;
   pageNumber?: number;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt?: Date;
+  lastModified?: Date;
   selectedText?: string;
+  googleDocId?: string;
+  googleDocUrl?: string;
 }
 
 export interface SavedAudio {

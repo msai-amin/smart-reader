@@ -19,11 +19,13 @@ import {
   Square,
   Play,
   Pause,
-  Volume2
+  Volume2,
+  StickyNote
 } from 'lucide-react'
 import { useAppStore, Document as DocumentType } from '../store/appStore'
 import { ttsService } from '../services/ttsService'
 import { TTSControls } from './TTSControls'
+import { NotesPanel } from './NotesPanel'
 import { storageService } from '../services/storageService'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -61,6 +63,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
   const [currentReadingText, setCurrentReadingText] = useState<string>('')
   const [spokenTextLength, setSpokenTextLength] = useState<number>(0)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; text: string } | null>(null)
+  const [showNotesPanel, setShowNotesPanel] = useState<boolean>(false)
+  const [selectedTextForNote, setSelectedTextForNote] = useState<string>('')
   const pageContainerRef = useRef<HTMLDivElement>(null)
 
   const highlightColors = [
@@ -737,6 +741,18 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
               <Download className="w-4 h-4" />
             </button>
 
+            {/* Notes Button */}
+            <button
+              onClick={() => {
+                setShowNotesPanel(!showNotesPanel);
+                setSelectedTextForNote('');
+              }}
+              className={`btn-ghost p-1.5 ${showNotesPanel ? 'bg-green-100 text-green-600' : ''}`}
+              title="Notes (N)"
+            >
+              <StickyNote className="w-4 h-4" />
+            </button>
+
             {/* TTS Controls - Always visible */}
             <div className="flex items-center gap-1 border-l border-gray-300 pl-2">
               {/* TTS Enable/Settings Toggle */}
@@ -1009,6 +1025,17 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
           }}
         >
           <button
+            onClick={() => {
+              setSelectedTextForNote(contextMenu.text);
+              setShowNotesPanel(true);
+              setContextMenu(null);
+            }}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2 text-green-600 dark:text-green-400"
+          >
+            <StickyNote className="w-4 h-4" />
+            Create note from selection
+          </button>
+          <button
             onClick={() => sendToAIChat(contextMenu.text)}
             className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2 text-blue-600 dark:text-blue-400"
           >
@@ -1032,6 +1059,19 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
           </div>
         </div>
       )}
+
+      {/* Notes Panel */}
+      <NotesPanel
+        isOpen={showNotesPanel}
+        onClose={() => {
+          setShowNotesPanel(false);
+          setSelectedTextForNote('');
+        }}
+        bookName={document.name}
+        bookId={document.id}
+        currentPage={pageNumber}
+        selectedText={selectedTextForNote}
+      />
     </div>
   )
 }

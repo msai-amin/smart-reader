@@ -341,6 +341,23 @@ class GoogleIntegrationService {
   }
 
   /**
+   * Delete note document from Google Docs
+   */
+  async deleteNoteDocument(docId: string): Promise<void> {
+    await this.initialize();
+
+    try {
+      await window.gapi.client.drive.files.delete({
+        fileId: docId
+      });
+      console.log('Note document deleted:', docId);
+    } catch (error) {
+      console.error('Error deleting note document:', error);
+      throw new Error(`Failed to delete note document: ${error}`);
+    }
+  }
+
+  /**
    * Check if Google Drive/Docs integration is available
    */
   isAvailable(): boolean {
