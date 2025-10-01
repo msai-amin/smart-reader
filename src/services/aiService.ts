@@ -4,6 +4,12 @@ import OpenAI from 'openai'
 // Get API key from environment
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
+// Debug logging
+console.log('=== OpenAI Service Initialization ===');
+console.log('API Key configured:', !!apiKey);
+console.log('API Key starts with:', apiKey ? apiKey.substring(0, 7) + '...' : 'NONE');
+console.log('===================================');
+
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: apiKey,
@@ -14,11 +20,14 @@ export const sendMessageToAI = async (message: string, documentContent?: string)
   try {
     // Check if API key is available
     if (!apiKey || apiKey === 'your_openai_api_key_here') {
-      console.warn('OpenAI API key not configured. Using mock responses.');
+      console.warn('❌ OpenAI API key not configured. Using mock responses.');
+      console.warn('Please set VITE_OPENAI_API_KEY in your .env file');
       return getMockResponse(message, documentContent)
     }
 
-    console.log('Using OpenAI API to generate response...');
+    console.log('✅ Using OpenAI API to generate response...');
+    console.log('Message:', message.substring(0, 100) + '...');
+    console.log('Has document content:', !!documentContent);
 
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -41,9 +50,12 @@ export const sendMessageToAI = async (message: string, documentContent?: string)
       temperature: 0.7,
     })
 
-    return completion.choices[0]?.message?.content || 'Sorry, I couldn\'t generate a response.'
+    const response = completion.choices[0]?.message?.content || 'Sorry, I couldn\'t generate a response.';
+    console.log('✅ OpenAI API Response received:', response.substring(0, 100) + '...');
+    return response;
   } catch (error) {
-    console.error('Error calling OpenAI API:', error)
+    console.error('❌ Error calling OpenAI API:', error)
+    console.warn('Falling back to mock responses');
     // Fallback to mock responses on error
     return getMockResponse(message, documentContent)
   }
