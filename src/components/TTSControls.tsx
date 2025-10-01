@@ -3,7 +3,7 @@ import { useAppStore } from '../store/appStore';
 import { ttsService } from '../services/ttsService';
 import { 
   Volume2, VolumeX, Play, Pause, Square, Settings, 
-  ChevronDown, FastForward, Rewind, User, Users
+  ChevronDown, FastForward, Rewind, User, Users, X
 } from 'lucide-react';
 
 export function TTSControls() {
@@ -47,9 +47,12 @@ export function TTSControls() {
     const allVoices = [...femaleVoices, ...maleVoices];
     const voice = allVoices.find(v => v.name === voiceName);
     if (voice) {
+      console.log('Voice selected:', voice.name);
       setSelectedVoice(voice);
       ttsService.setVoice(voice);
       updateTTS({ voiceName: voice.name });
+      // Force apply the voice immediately
+      ttsService.getSettings();
     }
   };
 
@@ -180,7 +183,15 @@ export function TTSControls() {
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-4">
+        <div className="relative p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-4 max-h-[70vh] overflow-y-auto">
+          {/* Close Button */}
+          <button
+            onClick={() => setShowSettings(false)}
+            className="absolute top-2 right-2 p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors z-10"
+            title="Close settings"
+          >
+            <X className="w-4 h-4" />
+          </button>
           {/* Voice Selection - Curated Natural Voices */}
           <div>
             <label className="block text-sm font-medium mb-3">Choose a Natural Voice</label>
@@ -338,6 +349,16 @@ export function TTSControls() {
             <label htmlFor="highlight-word" className="text-sm">
               Highlight current word while reading
             </label>
+          </div>
+
+          {/* Done Button */}
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setShowSettings(false)}
+              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+            >
+              Done
+            </button>
           </div>
         </div>
       )}
