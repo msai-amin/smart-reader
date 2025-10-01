@@ -3146,3 +3146,13 @@
 {"level":"info","message":"::1 - - [01/Oct/2025:01:55:35 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 01:55:35"}
 {"level":"info","message":"::1 - - [01/Oct/2025:01:56:05 +0000] \"GET /health HTTP/1.1\" 200 125 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 01:56:05"}
 {"level":"info","message":"::1 - - [01/Oct/2025:01:56:35 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 01:56:35"}
+{"level":"info","message":"::1 - - [01/Oct/2025:01:57:05 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 01:57:05"}
+{"level":"info","message":"::1 - - [01/Oct/2025:01:57:35 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 01:57:35"}
+{"activeConnections":0,"averageResponseTime":0,"errorRate":1,"level":"info","message":"Current metrics:","service":"api-gateway","timestamp":"2025-10-01 01:57:52","totalRequests":2769}
+{"level":"info","message":"::1 - - [01/Oct/2025:01:58:05 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 01:58:05"}
+{"level":"info","message":"::1 - - [01/Oct/2025:01:58:35 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 01:58:35"}
+{"level":"info","message":"::1 - - [01/Oct/2025:01:59:05 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 01:59:05"}
+{"level":"info","message":"::1 - - [01/Oct/2025:01:59:35 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 01:59:35"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:00:05 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:00:05"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:00:35 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:00:35"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:01:06 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:01:06"}

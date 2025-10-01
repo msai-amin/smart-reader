@@ -29,15 +29,29 @@ export const sendMessageToAI = async (message: string, documentContent?: string)
     console.log('Message:', message.substring(0, 100) + '...');
     console.log('Has document content:', !!documentContent);
 
+    // Truncate document content to fit within token limits
+    // GPT-3.5-turbo has a 16,385 token limit
+    // We'll use ~12,000 characters (~3,000 tokens) for document content
+    // This leaves room for system message, user message, and response
+    const maxContentLength = 12000;
+    let truncatedContent = documentContent;
+    
+    if (documentContent && documentContent.length > maxContentLength) {
+      truncatedContent = documentContent.substring(0, maxContentLength);
+      console.warn(`⚠️ Document truncated from ${documentContent.length} to ${maxContentLength} characters to fit token limit`);
+    }
+
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
           content: `You are an AI assistant helping users understand and analyze documents. 
-                   ${documentContent ? 
-                     `The user has uploaded a document with the following content:\n\n${documentContent}\n\n` +
-                     'Please provide helpful, accurate responses based on the document content.' :
+                   ${truncatedContent ? 
+                     `The user has uploaded a document. Here is a portion of the content:\n\n${truncatedContent}\n\n` +
+                     (documentContent && documentContent.length > maxContentLength ? 
+                       'Note: The document is very long, so only the beginning is shown. If the user asks about later parts, let them know you can only see the beginning of the document.' :
+                       'Please provide helpful, accurate responses based on the document content.') :
                      'The user has not uploaded any document yet. Please ask them to upload a document first.'
                    }`
         },
