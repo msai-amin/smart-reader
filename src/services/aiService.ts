@@ -1,78 +1,116 @@
-// AI Service for handling chat interactions
+// AI Service for handling chat interactions with OpenAI and Gemini support
 import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Get API key from environment
-const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+// Get API keys from environment
+const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 // Debug logging
-console.log('=== OpenAI Service Initialization ===');
-console.log('API Key configured:', !!apiKey);
-console.log('API Key starts with:', apiKey ? apiKey.substring(0, 7) + '...' : 'NONE');
+console.log('=== AI Service Initialization ===');
+console.log('OpenAI Key configured:', !!openaiApiKey);
+console.log('Gemini Key configured:', !!geminiApiKey);
+if (openaiApiKey) console.log('OpenAI Key starts with:', openaiApiKey.substring(0, 7) + '...');
+if (geminiApiKey) console.log('Gemini Key starts with:', geminiApiKey.substring(0, 20) + '...');
 console.log('===================================');
 
 // Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: apiKey,
+const openai = openaiApiKey ? new OpenAI({
+  apiKey: openaiApiKey,
   dangerouslyAllowBrowser: true // Only for client-side usage
-})
+}) : null;
+
+// Initialize Gemini client
+const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 
 export const sendMessageToAI = async (message: string, documentContent?: string): Promise<string> => {
-  try {
-    // Check if API key is available
-    if (!apiKey || apiKey === 'your_openai_api_key_here') {
-      console.warn('❌ OpenAI API key not configured. Using mock responses.');
-      console.warn('Please set VITE_OPENAI_API_KEY in your .env file');
-      return getMockResponse(message, documentContent)
-    }
-
-    console.log('✅ Using OpenAI API to generate response...');
-    console.log('Message:', message.substring(0, 100) + '...');
-    console.log('Has document content:', !!documentContent);
-
-    // Truncate document content to fit within token limits
-    // GPT-3.5-turbo has a 16,385 token limit
-    // We'll use ~12,000 characters (~3,000 tokens) for document content
-    // This leaves room for system message, user message, and response
-    const maxContentLength = 12000;
-    let truncatedContent = documentContent;
-    
-    if (documentContent && documentContent.length > maxContentLength) {
-      truncatedContent = documentContent.substring(0, maxContentLength);
-      console.warn(`⚠️ Document truncated from ${documentContent.length} to ${maxContentLength} characters to fit token limit`);
-    }
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `You are an AI assistant helping users understand and analyze documents. 
-                   ${truncatedContent ? 
-                     `The user has uploaded a document. Here is a portion of the content:\n\n${truncatedContent}\n\n` +
-                     (documentContent && documentContent.length > maxContentLength ? 
-                       'Note: The document is very long, so only the beginning is shown. If the user asks about later parts, let them know you can only see the beginning of the document.' :
-                       'Please provide helpful, accurate responses based on the document content.') :
-                     'The user has not uploaded any document yet. Please ask them to upload a document first.'
-                   }`
-        },
-        {
-          role: "user",
-          content: message
-        }
-      ],
-      max_tokens: 1000,
-      temperature: 0.7,
-    })
-
-    const response = completion.choices[0]?.message?.content || 'Sorry, I couldn\'t generate a response.';
-    console.log('✅ OpenAI API Response received:', response.substring(0, 100) + '...');
-    return response;
-  } catch (error) {
-    console.error('❌ Error calling OpenAI API:', error)
-    console.warn('Falling back to mock responses');
-    // Fallback to mock responses on error
-    return getMockResponse(message, documentContent)
+  // Truncate document content to fit within token limits
+  const maxContentLength = 12000;
+  let truncatedContent = documentContent;
+  
+  if (documentContent && documentContent.length > maxContentLength) {
+    truncatedContent = documentContent.substring(0, maxContentLength);
+    console.warn(`⚠️ Document truncated from ${documentContent.length} to ${maxContentLength} characters to fit token limit`);
   }
+
+  // Try Gemini first (better for large contexts and free tier)
+  if (genAI) {
+    try {
+      console.log('✅ Using Gemini API to generate response...');
+      console.log('Message:', message.substring(0, 100) + '...');
+      console.log('Has document content:', !!documentContent);
+
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      
+      const prompt = `You are an AI assistant helping users understand and analyze documents.
+
+${truncatedContent ? 
+  `The user has uploaded a document. Here is a portion of the content:\n\n${truncatedContent}\n\n` +
+  (documentContent && documentContent.length > maxContentLength ? 
+    'Note: The document is very long, so only the beginning is shown. If the user asks about later parts, let them know you can only see the beginning of the document.' :
+    'Please provide helpful, accurate responses based on the document content.') :
+  'The user has not uploaded any document yet. Please ask them to upload a document first.'
+}
+
+User Question: ${message}
+
+Please provide a helpful, accurate response:`;
+
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const text = response.text();
+      
+      console.log('✅ Gemini API Response received:', text.substring(0, 100) + '...');
+      return text;
+    } catch (error) {
+      console.error('❌ Error calling Gemini API:', error);
+      console.log('⚠️ Falling back to OpenAI...');
+    }
+  }
+
+  // Fallback to OpenAI if Gemini is not available or failed
+  if (openai && openaiApiKey && openaiApiKey !== 'your_openai_api_key_here') {
+    try {
+      console.log('✅ Using OpenAI API to generate response...');
+      console.log('Message:', message.substring(0, 100) + '...');
+      console.log('Has document content:', !!documentContent);
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: `You are an AI assistant helping users understand and analyze documents. 
+                     ${truncatedContent ? 
+                       `The user has uploaded a document. Here is a portion of the content:\n\n${truncatedContent}\n\n` +
+                       (documentContent && documentContent.length > maxContentLength ? 
+                         'Note: The document is very long, so only the beginning is shown. If the user asks about later parts, let them know you can only see the beginning of the document.' :
+                         'Please provide helpful, accurate responses based on the document content.') :
+                       'The user has not uploaded any document yet. Please ask them to upload a document first.'
+                     }`
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7,
+      })
+
+      const response = completion.choices[0]?.message?.content || 'Sorry, I couldn\'t generate a response.';
+      console.log('✅ OpenAI API Response received:', response.substring(0, 100) + '...');
+      return response;
+    } catch (error) {
+      console.error('❌ Error calling OpenAI API:', error);
+      console.warn('Both AI APIs failed, falling back to mock responses');
+    }
+  }
+
+  // If both APIs are unavailable or failed, use mock responses
+  console.warn('❌ No AI API keys configured. Using mock responses.');
+  console.warn('Please set VITE_OPENAI_API_KEY or VITE_GEMINI_API_KEY in your .env file');
+  return getMockResponse(message, documentContent);
 }
 
 // Fallback mock responses when OpenAI API is not available

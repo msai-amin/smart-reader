@@ -20,7 +20,7 @@ An intelligent document reading assistant with AI chat capabilities, built with 
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: Tailwind CSS + Headless UI
 - **State Management**: Zustand
-- **AI Integration**: OpenAI API (configurable)
+- **AI Integration**: OpenAI GPT-3.5 & Google Gemini (configurable, with automatic fallback)
 - **Document Processing**: PDF.js + react-pdf for advanced PDF viewing
 - **PWA**: Vite PWA plugin
 
@@ -50,10 +50,20 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` and add your OpenAI API key:
+Edit `.env` and add your AI API keys (you can use either or both):
 ```
-VITE_OPENAI_API_KEY=your_api_key_here
+# Option 1: Use Gemini (recommended - free tier available)
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+
+# Option 2: Use OpenAI
+VITE_OPENAI_API_KEY=your_openai_api_key_here
+
+# The app will try Gemini first, then fall back to OpenAI if needed
 ```
+
+Get your API keys:
+- **Gemini**: https://makersuite.google.com/app/apikey
+- **OpenAI**: https://platform.openai.com/api-keys
 
 4. Start the microservices (optional):
 ```bash

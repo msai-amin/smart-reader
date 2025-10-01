@@ -3156,3 +3156,24 @@
 {"level":"info","message":"::1 - - [01/Oct/2025:02:00:05 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:00:05"}
 {"level":"info","message":"::1 - - [01/Oct/2025:02:00:35 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:00:35"}
 {"level":"info","message":"::1 - - [01/Oct/2025:02:01:06 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:01:06"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:01:36 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:01:36"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:02:06 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:02:06"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:02:36 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:02:36"}
+{"activeConnections":0,"averageResponseTime":0,"errorRate":1,"level":"info","message":"Current metrics:","service":"api-gateway","timestamp":"2025-10-01 02:02:52","totalRequests":2779}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:03:06 +0000] \"GET /health HTTP/1.1\" 200 124 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:03:06"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:03:36 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:03:36"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:04:06 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:04:06"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:04:36 +0000] \"GET /health HTTP/1.1\" 200 125 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:04:36"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:05:06 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:05:06"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:05:36 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:05:36"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:06:07 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:06:07"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:06:37 +0000] \"GET /health HTTP/1.1\" 200 125 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:06:37"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:07:07 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:07:07"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:07:37 +0000] \"GET /health HTTP/1.1\" 200 125 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:07:37"}
+{"activeConnections":0,"averageResponseTime":0,"errorRate":1,"level":"info","message":"Current metrics:","service":"api-gateway","timestamp":"2025-10-01 02:07:52","totalRequests":2789}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:08:07 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:08:07"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:08:37 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:08:37"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:09:07 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:09:07"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:09:37 +0000] \"GET /health HTTP/1.1\" 200 125 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:09:37"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:10:07 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:10:07"}
+{"level":"info","message":"::1 - - [01/Oct/2025:02:10:37 +0000] \"GET /health HTTP/1.1\" 200 126 \"-\" \"-\"","service":"api-gateway","timestamp":"2025-10-01 02:10:37"}
