@@ -1,7 +1,9 @@
 import React, { useCallback, useState } from 'react'
-import { X, Upload, FileText, AlertCircle, Save } from 'lucide-react'
+import { X, Upload, FileText, AlertCircle, Save, Cloud } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
 import { storageService } from '../services/storageService'
+import { googleIntegrationService } from '../services/googleIntegrationService'
+import { simpleGoogleAuth } from '../services/simpleGoogleAuth'
 
 interface DocumentUploadProps {
   onClose: () => void
@@ -61,6 +63,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onClose }) => {
         // Save to library if checkbox is checked
         if (saveToLibrary) {
           try {
+            // Save locally
             await storageService.saveBook({
               id: document.id,
               title: document.name,
@@ -70,6 +73,18 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onClose }) => {
               totalPages,
               fileData: pdfData,
             })
+            
+            // Upload to Google Drive "Readings In Progress" if user is signed in
+            if (simpleGoogleAuth.isSignedIn()) {
+              try {
+                console.log('Uploading PDF to Google Drive...')
+                const readingFile = await googleIntegrationService.uploadPDFToReadings(file)
+                console.log('PDF uploaded to Google Drive:', readingFile.url)
+              } catch (driveError) {
+                console.error('Error uploading to Google Drive:', driveError)
+                // Don't fail the whole operation if Drive upload fails
+              }
+            }
           } catch (err) {
             console.error('Error saving to library:', err)
           }
@@ -253,7 +268,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onClose }) => {
             />
             <label htmlFor="save-to-library" className="ml-2 text-sm text-gray-700 flex items-center gap-1">
               <Save className="w-4 h-4" />
-              Save to Library for offline access
+              Save to Library {simpleGoogleAuth.isSignedIn() && <span className="flex items-center gap-1">& <Cloud className="w-4 h-4" /> Google Drive</span>}
             </label>
           </div>
         </div>

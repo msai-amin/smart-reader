@@ -1,9 +1,20 @@
 /**
  * Google Drive Service
- * Handles file operations with Google Drive
+ * Handles file operations with Google Drive and Google Docs
  */
 
-import { googleAuthService, GoogleDriveFile } from './googleAuthService';
+import { simpleGoogleAuth } from './simpleGoogleAuth';
+
+export interface GoogleDriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: number;
+  createdTime: Date;
+  modifiedTime: Date;
+  webViewLink?: string;
+  parents?: string[];
+}
 
 export interface DriveFileMetadata {
   id: string;
