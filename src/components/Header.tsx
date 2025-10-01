@@ -47,21 +47,26 @@ export const Header: React.FC = () => {
 
           {/* Actions */}
           <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowLibrary(true)}
-              className="btn-ghost flex items-center space-x-2"
-            >
-              <Library className="w-4 h-4" />
-              <span>Library</span>
-            </button>
+            {/* Show Library and Upload only when user is signed in */}
+            {user && (
+              <>
+                <button
+                  onClick={() => setShowLibrary(true)}
+                  className="btn-ghost flex items-center space-x-2"
+                >
+                  <Library className="w-4 h-4" />
+                  <span>Library</span>
+                </button>
 
-            <button
-              onClick={() => setShowUpload(true)}
-              className="btn-secondary flex items-center space-x-2"
-            >
-              <Upload className="w-4 h-4" />
-              <span>Upload</span>
-            </button>
+                <button
+                  onClick={() => setShowUpload(true)}
+                  className="btn-secondary flex items-center space-x-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Upload</span>
+                </button>
+              </>
+            )}
             
             <button
               onClick={() => setShowSettings(true)}

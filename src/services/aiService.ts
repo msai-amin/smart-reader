@@ -1,19 +1,24 @@
 // AI Service for handling chat interactions
 import OpenAI from 'openai'
 
+// Get API key from environment
+const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: (import.meta as any).env?.VITE_OPENAI_API_KEY,
+  apiKey: apiKey,
   dangerouslyAllowBrowser: true // Only for client-side usage
 })
 
 export const sendMessageToAI = async (message: string, documentContent?: string): Promise<string> => {
   try {
     // Check if API key is available
-    if (!(import.meta as any).env?.VITE_OPENAI_API_KEY || (import.meta as any).env?.VITE_OPENAI_API_KEY === 'your_openai_api_key_here') {
-      // Fallback to mock responses if no API key
+    if (!apiKey || apiKey === 'your_openai_api_key_here') {
+      console.warn('OpenAI API key not configured. Using mock responses.');
       return getMockResponse(message, documentContent)
     }
+
+    console.log('Using OpenAI API to generate response...');
 
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
