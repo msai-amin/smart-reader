@@ -82,10 +82,19 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return
+      // Ignore keyboard shortcuts when typing in input fields or textareas
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       
-      // ESC key closes TTS settings or highlight menu
+      // Ignore keyboard shortcuts when Notes panel is open (except ESC)
+      if (showNotesPanel && e.key !== 'Escape') return
+      
+      // ESC key closes TTS settings, highlight menu, notes panel, or exits fullscreen
       if (e.key === 'Escape') {
+        if (showNotesPanel) {
+          setShowNotesPanel(false)
+          setSelectedTextForNote('')
+          return
+        }
         if (showTTSSettings) {
           setShowTTSSettings(false)
           return
@@ -131,7 +140,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ document }) => {
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [pageNumber, numPages, scale, rotation, showHighlightMenu, showTTSSettings, scrollMode, isFullscreen])
+  }, [pageNumber, numPages, scale, rotation, showHighlightMenu, showTTSSettings, scrollMode, isFullscreen, showNotesPanel])
 
   // Handle text selection for highlighting and context menu
   useEffect(() => {
